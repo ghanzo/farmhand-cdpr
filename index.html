@@ -227,7 +227,8 @@ const cam3 = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
 cam3.position.set(95, 62, 118);
 
 const controls = new OrbitControls(cam3, canvas);
-controls.target.set(0, 8, 0);
+// pivot sits east of midfield so the field centers in the area left of the panel
+controls.target.set(16, 6, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.maxPolarAngle = Math.PI * 0.49;
@@ -619,10 +620,6 @@ $('btn-pause').addEventListener('click', e => {
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   cam3.aspect = innerWidth / innerHeight;
-  // side panel covers ~330px on the right — shift the composition left so
-  // the field centers in the visible area
-  if (innerWidth > 760) cam3.setViewOffset(innerWidth, innerHeight, 165, 0, innerWidth, innerHeight);
-  else cam3.clearViewOffset();
   cam3.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
