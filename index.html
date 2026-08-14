@@ -14,6 +14,7 @@
     --grid:        #2c2c2a;
     --baseline:    #383835;
     --border:      rgba(255,255,255,0.10);
+    --warn:        #fab219;
     --m1: #3987e5;  /* NE — blue   */
     --m2: #d95926;  /* NW — orange */
     --m3: #199e70;  /* SW — aqua   */
@@ -38,7 +39,7 @@
 
   #panel {
     position: fixed; top: 12px; right: 12px; bottom: 12px; z-index: 6;
-    width: 330px; overflow-y: auto; overscroll-behavior: contain;
+    width: 340px; overflow-y: auto; overscroll-behavior: contain;
     display: flex; flex-direction: column; gap: 10px;
     scrollbar-width: thin; scrollbar-color: var(--baseline) transparent;
   }
@@ -54,18 +55,17 @@
   }
 
   /* ---- motor readouts ---- */
-  .motor-row {
-    display: grid; grid-template-columns: 14px 58px 1fr 1fr 1fr; gap: 8px;
-    align-items: baseline; padding: 5px 0;
-  }
+  .head-row, .motor-row { display: grid; grid-template-columns: 13px 74px 1fr 1fr 1fr; gap: 7px; align-items: baseline; }
+  .head-row span { color: var(--ink-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; text-align: right; }
+  .motor-row { padding: 5px 0; }
   .motor-row + .motor-row { border-top: 1px solid var(--grid); }
   .chip { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
   .motor-name { color: var(--ink); font-size: 12.5px; font-weight: 600; }
+  .motor-name small { display: block; font-size: 9px; font-weight: 600; letter-spacing: .4px; color: var(--ink-muted); }
+  .motor-name small.slack { color: var(--warn); }
   .motor-val  { font-variant-numeric: tabular-nums; text-align: right; font-size: 12.5px; color: var(--ink-2); }
   .motor-val small { display: block; color: var(--ink-muted); font-size: 9.5px; letter-spacing: .3px; }
   .rate-out { color: var(--ink); }
-  .head-row { display: grid; grid-template-columns: 14px 58px 1fr 1fr 1fr; gap: 8px; }
-  .head-row span { color: var(--ink-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; text-align: right; }
 
   /* ---- chart ---- */
   .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 6px; }
@@ -85,7 +85,7 @@
   .chart-note { color: var(--ink-muted); font-size: 10.5px; margin-top: 5px; }
 
   /* ---- controls ---- */
-  .ctl { display: grid; grid-template-columns: 64px 1fr 52px; gap: 10px; align-items: center; padding: 4px 0; }
+  .ctl { display: grid; grid-template-columns: 64px 1fr 58px; gap: 10px; align-items: center; padding: 4px 0; }
   .ctl label { font-size: 12px; color: var(--ink-2); }
   .ctl output { font-size: 12px; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
   input[type="range"] { width: 100%; accent-color: var(--m1); height: 18px; }
@@ -128,15 +128,15 @@
 <canvas id="scene"></canvas>
 
 <div class="overlay-title">
-  <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v2</span></h1>
-  <p>Four-motor cable camera — the 2D single-motor math of v1, now in 3D.</p>
+  <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v3</span></h1>
+  <p>Four-motor cable camera — now with motion profiles, gondola dynamics, slack, and reel geometry.</p>
   <div class="hint">Click the field to fly the camera there · drag to orbit · scroll to zoom</div>
 </div>
 
 <div id="panel">
   <div class="card">
     <h2>Motors</h2>
-    <div class="head-row"><span></span><span></span><span>cable</span><span>payout</span><span>steps</span></div>
+    <div class="head-row"><span></span><span></span><span>cable</span><span>payout</span><span>reel</span></div>
     <div id="motors"></div>
   </div>
 
@@ -147,15 +147,20 @@
       <canvas id="chart"></canvas>
       <div id="tooltip"></div>
     </div>
-    <div class="chart-note">yd/s · above 0 = paying out, below 0 = reeling in. Camera speed is constant — motor rates aren’t. That’s the whole point.</div>
+    <div class="chart-note">yd/s · above 0 = paying out, below 0 = reeling in. Constant-speed cruise still bends every motor’s curve — and now the accel ramps bend them twice.</div>
   </div>
 
   <div class="card">
     <h2>Controls</h2>
     <div class="ctl">
       <label for="speed">Speed</label>
-      <input type="range" id="speed" min="2" max="25" step="0.5" value="8">
-      <output id="speed-out">8.0 yd/s</output>
+      <input type="range" id="speed" min="2" max="25" step="0.5" value="10">
+      <output id="speed-out">10.0 yd/s</output>
+    </div>
+    <div class="ctl">
+      <label for="accel">Accel</label>
+      <input type="range" id="accel" min="1" max="20" step="0.5" value="6">
+      <output id="accel-out">6.0 yd/s²</output>
     </div>
     <div class="ctl">
       <label for="height">Height</label>
@@ -163,9 +168,10 @@
       <output id="height-out">12.0 yd</output>
     </div>
     <div class="btns">
-      <button id="btn-v1" title="Replay the v1 demo: one straight pass at constant speed">v1 pass</button>
-      <button id="btn-lap" title="Tour the four corners">Lap</button>
+      <button id="btn-v1" title="Replay the v1 demo: one straight pass">v1 pass</button>
+      <button id="btn-lap" title="Tour the corners with altitude changes">3D lap</button>
       <button id="btn-center" title="Return to midfield">Center</button>
+      <button id="btn-stop" title="Brake to a stop — watch the gondola swing and the near cables go slack">Stop</button>
       <button id="btn-pause" title="Freeze the simulation">Pause</button>
     </div>
   </div>
@@ -174,11 +180,17 @@
     <details open>
       <summary>The math</summary>
       <div class="math">
-        <p>Towers hold cable ends at fixed points <b>T<sub>i</sub></b>. The camera sits at <b>P</b> = (x, y, z). Each cable’s length is just 3D Pythagoras:</p>
-        <div class="eq">L<sub>i</sub> = |P − T<sub>i</sub>| = √( (x−x<sub>i</sub>)² + (y−y<sub>i</sub>)² + (z−z<sub>i</sub>)² )</div>
-        <p>When the camera moves with velocity <b>v</b>, each motor must pay out (or reel in) at:</p>
-        <div class="eq">dL<sub>i</sub>/dt = ( (P − T<sub>i</sub>) · v ) / L<sub>i</sub></div>
-        <p class="why">The dot product projects the camera’s motion onto each cable’s direction — so a straight, constant-speed camera path demands four different, continuously changing motor speeds. Steppers approximate the ideal length with the v1 rule: take the next step only when it lands closer than staying put (error ≤ ½ step = 2.5 cm here). Cables are modeled straight — no catenary sag yet.</p>
+        <p>Cable lengths are 3D Pythagoras from each tower top <b>T<sub>i</sub></b> to the commanded camera position <b>P</b>; payout rates are the motion projected onto each cable:</p>
+        <div class="eq">L<sub>i</sub> = |P − T<sub>i</sub>| &nbsp;&nbsp;·&nbsp;&nbsp; dL<sub>i</sub>/dt = ((P − T<sub>i</sub>) · v) / L<sub>i</sub></div>
+        <p><b>Motion profile</b> — speed is governed so the rig can always brake to the target at accel limit <b>a</b>:</p>
+        <div class="eq">|v| ≤ min( v<sub>max</sub>, √(2 · a · d<sub>remaining</sub>) )</div>
+        <p><b>Gondola dynamics</b> — the rendered gondola is a damped spring chasing the commanded point (softer horizontally, stiffer vertically), so it lags under acceleration and bobs on arrival:</p>
+        <div class="eq">ẍ = ω²(P<sub>cmd</sub> − x) − 2ζω·ẋ</div>
+        <p><b>Slack &amp; sag</b> — the winches pay cable for the <i>commanded</i> position; when the swinging gondola is nearer a tower than commanded, that cable has excess length and droops (parabolic approximation of a catenary):</p>
+        <div class="eq">slack<sub>i</sub> = L<sub>paid,i</sub> − |P<sub>vis</sub> − T<sub>i</sub>| &nbsp;&nbsp;·&nbsp;&nbsp; sag ≈ √( 3 · D · slack / 8 )</div>
+        <p><b>Reels</b> — payout speed maps to drum RPM through the effective radius, which grows as cable layers wind on:</p>
+        <div class="eq">r<sub>eff</sub> = r<sub>core</sub> + layer · d<sub>cable</sub> &nbsp;&nbsp;·&nbsp;&nbsp; RPM = 60 · |dL/dt| / (2π · r<sub>eff</sub>)</div>
+        <p class="why">Drum: 0.35 yd core radius, 8 mm cable, 38 wraps per layer, 300 yd capacity per winch. Same cable, same motor speed, different layer → different line speed. That’s why real winches encoder the cable, not just the motor.</p>
       </div>
     </details>
   </div>
@@ -200,17 +212,26 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 /* ================= world constants (units: yards) ================= */
-const FIELD_L = 120, FIELD_W = 53.33;          // NFL field incl. end zones
+const FIELD_L = 120, FIELD_W = 53.33;
 const TOWER_H = 35;
-const TOWERS = [                                // cable anchor points (tops)
+const TOWERS = [
   { name: 'M1', corner: 'NE', pos: new THREE.Vector3( 72, TOWER_H, -34), css: '--m1' },
   { name: 'M2', corner: 'NW', pos: new THREE.Vector3(-72, TOWER_H, -34), css: '--m2' },
   { name: 'M3', corner: 'SW', pos: new THREE.Vector3(-72, TOWER_H,  34), css: '--m3' },
   { name: 'M4', corner: 'SE', pos: new THREE.Vector3( 72, TOWER_H,  34), css: '--m4' },
 ];
-const BOUND_X = 55, BOUND_Z = 24;               // camera travel envelope
-const H_MIN = 3, H_MAX = 30;
-const STEP_SIZE = 0.0273;                        // yd per motor step (≈ 2.5 cm)
+const BOUND_X = 55, BOUND_Z = 24, H_MIN = 3, H_MAX = 30;
+
+/* reel geometry */
+const REEL = {
+  coreR: 0.35,          // drum core radius, yd
+  cableD: 0.0087,       // 8 mm cable in yd
+  wrapsPerLayer: 38,
+  capacity: 300,        // yd of cable on each winch
+};
+
+/* gondola spring-damper (horizontal swing softer than vertical stretch) */
+const DYN = { wH: 1.9, zH: 0.20, wV: 4.6, zV: 0.16 };
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const COLORS = TOWERS.map(t => css(t.css));
@@ -227,7 +248,6 @@ const cam3 = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
 cam3.position.set(95, 62, 118);
 
 const controls = new OrbitControls(cam3, canvas);
-// pivot sits east of midfield so the field centers in the area left of the panel
 controls.target.set(16, 6, 0);
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
@@ -240,7 +260,6 @@ const sun = new THREE.DirectionalLight(0xffffff, 1.4);
 sun.position.set(60, 120, 40);
 scene.add(sun);
 
-/* ---- ground + field ---- */
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(900, 900),
   new THREE.MeshLambertMaterial({ color: 0x141413 })
@@ -254,19 +273,15 @@ function fieldTexture() {
   c.width = 1200; c.height = 533;
   const g = c.getContext('2d');
   g.fillStyle = '#2c6e31'; g.fillRect(0, 0, 1200, 533);
-  // mow stripes
   for (let i = 0; i < 12; i++) {
     if (i % 2) { g.fillStyle = 'rgba(255,255,255,0.045)'; g.fillRect(100 + i * (1000/12), 0, 1000/12, 533); }
   }
-  // end zones
   g.fillStyle = '#1d5322'; g.fillRect(0, 0, 100, 533); g.fillRect(1100, 0, 100, 533);
-  // lines every 5 yd
   g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 3;
   for (let ydl = 0; ydl <= 100; ydl += 5) {
     const x = 100 + ydl * 10;
     g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 533); g.stroke();
   }
-  // hash marks
   g.lineWidth = 2;
   for (let ydl = 1; ydl < 100; ydl++) {
     const x = 100 + ydl * 10;
@@ -274,7 +289,6 @@ function fieldTexture() {
       g.beginPath(); g.moveTo(x, hy - 5); g.lineTo(x, hy + 5); g.stroke();
     }
   }
-  // border
   g.lineWidth = 6; g.strokeStyle = 'rgba(255,255,255,0.9)';
   g.strokeRect(3, 3, 1194, 527);
   const tx = new THREE.CanvasTexture(c);
@@ -288,7 +302,6 @@ const field = new THREE.Mesh(
 field.rotation.x = -Math.PI / 2;
 scene.add(field);
 
-/* ---- towers ---- */
 for (const t of TOWERS) {
   const col = new THREE.Color(css(t.css));
   const mast = new THREE.Mesh(
@@ -303,10 +316,9 @@ for (const t of TOWERS) {
   );
   head.position.copy(t.pos);
   scene.add(head);
-  t.head = head;
 }
 
-/* ---- camera rig (the shuttle) ---- */
+/* ---- gondola ---- */
 const rig = new THREE.Group();
 const body = new THREE.Mesh(
   new THREE.BoxGeometry(1.6, 1.0, 1.0),
@@ -326,26 +338,45 @@ hook.position.y = 0.75;
 rig.add(body, lens, hook);
 scene.add(rig);
 
-/* ---- cables: thin cylinders re-posed each frame ---- */
+/* ghost marker for the commanded position (what the winches are tracking) */
+const cmdGhost = new THREE.Mesh(
+  new THREE.SphereGeometry(0.22, 10, 8),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.35 })
+);
+scene.add(cmdGhost);
+
+/* ---- cables: segmented so they can sag ---- */
+const CABLE_SEGS = 12;
 const cables = TOWERS.map(t => {
-  const m = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.09, 0.09, 1, 6, 1, true),
-    new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) })
-  );
-  scene.add(m);
-  return m;
+  const segs = [];
+  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) });
+  for (let i = 0; i < CABLE_SEGS; i++) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 1, 6, 1, true), mat);
+    scene.add(m);
+    segs.push(m);
+  }
+  return segs;
 });
-const _mid = new THREE.Vector3(), _dir = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
-function poseCable(mesh, a, b) {
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _mid = new THREE.Vector3(),
+      _dir = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+function poseSegment(mesh, a, b) {
   _dir.subVectors(b, a);
-  const len = _dir.length();
+  const len = Math.max(_dir.length(), 1e-4);
   _mid.addVectors(a, b).multiplyScalar(0.5);
   mesh.position.copy(_mid);
   mesh.scale.set(1, len, 1);
   mesh.quaternion.setFromUnitVectors(_up, _dir.normalize());
 }
+/* parabolic droop between tower top T and gondola P with midspan sag s */
+function poseCable(segs, T, P, sag) {
+  for (let i = 0; i < CABLE_SEGS; i++) {
+    const t0 = i / CABLE_SEGS, t1 = (i + 1) / CABLE_SEGS;
+    _a.lerpVectors(T, P, t0); _a.y -= 4 * sag * t0 * (1 - t0);
+    _b.lerpVectors(T, P, t1); _b.y -= 4 * sag * t1 * (1 - t1);
+    poseSegment(segs[i], _a, _b);
+  }
+}
 
-/* ---- click-target marker ---- */
 const marker = new THREE.Mesh(
   new THREE.RingGeometry(1.1, 1.7, 36),
   new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
@@ -356,18 +387,33 @@ scene.add(marker);
 
 /* ================= simulation state ================= */
 const state = {
-  pos: new THREE.Vector3(0, 12, 0),
-  vel: new THREE.Vector3(),
+  cmdPos: new THREE.Vector3(0, 12, 0),   // what the control system commands
+  cmdVel: new THREE.Vector3(),
+  visPos: new THREE.Vector3(0, 12, 0),   // where the gondola actually hangs
+  visVel: new THREE.Vector3(),
   target: null,
   queue: [],
-  speed: 8,
+  vmax: 10,
+  amax: 6,
   paused: false,
   t: 0,
 };
+
+/* reel helper: from cable paid out, how full is the drum and what radius is the working layer */
+function reelState(paidOut) {
+  let wound = Math.max(REEL.capacity - paidOut, 0);
+  let layer = 0;
+  while (true) {
+    const layerLen = 2 * Math.PI * (REEL.coreR + layer * REEL.cableD) * REEL.wrapsPerLayer;
+    if (wound <= layerLen) break;
+    wound -= layerLen; layer++;
+  }
+  return { layer, rEff: REEL.coreR + layer * REEL.cableD };
+}
+
 const motors = TOWERS.map(t => ({
   ...t,
-  L: 0, rate: 0,
-  steps: 0,                 // cumulative step count (quantized, v1 rule)
+  Lpaid: 0, chordVis: 0, rate: 0, slack: 0, rpm: 0, layer: 0,
 }));
 
 function setTarget(x, y, z) {
@@ -380,51 +426,69 @@ function setTarget(x, y, z) {
   marker.material.opacity = 0.9;
 }
 
+const _want = new THREE.Vector3(), _dv = new THREE.Vector3(), _rel = new THREE.Vector3();
+
 function tick(dt) {
   if (!state.target && state.queue.length) state.target = state.queue.shift().clone();
 
-  state.vel.set(0, 0, 0);
+  /* ---- motion profile: accel-limited velocity governor ---- */
+  _want.set(0, 0, 0);
   if (state.target) {
-    _dir.subVectors(state.target, state.pos);
+    _dir.subVectors(state.target, state.cmdPos);
     const dist = _dir.length();
-    const step = state.speed * dt;
-    if (dist <= step) {
-      state.pos.copy(state.target);
+    if (dist < 0.06 && state.cmdVel.length() < 0.25) {
+      state.cmdPos.copy(state.target);
+      state.cmdVel.set(0, 0, 0);
       state.target = null;
     } else {
-      _dir.normalize();
-      state.vel.copy(_dir).multiplyScalar(state.speed);
-      state.pos.addScaledVector(_dir, step);
+      const vAllow = Math.min(state.vmax, Math.sqrt(2 * state.amax * dist));
+      _want.copy(_dir).normalize().multiplyScalar(vAllow);
     }
   }
+  _dv.subVectors(_want, state.cmdVel);
+  const dvMax = state.amax * dt;
+  if (_dv.length() > dvMax) _dv.normalize().multiplyScalar(dvMax);
+  state.cmdVel.add(_dv);
+  state.cmdPos.addScaledVector(state.cmdVel, dt);
 
-  // motor math — the reason this page exists
+  /* ---- gondola dynamics: damped spring chasing the commanded point ---- */
+  const ax = DYN.wH * DYN.wH * (state.cmdPos.x - state.visPos.x) - 2 * DYN.zH * DYN.wH * state.visVel.x;
+  const az = DYN.wH * DYN.wH * (state.cmdPos.z - state.visPos.z) - 2 * DYN.zH * DYN.wH * state.visVel.z;
+  const ay = DYN.wV * DYN.wV * (state.cmdPos.y - state.visPos.y) - 2 * DYN.zV * DYN.wV * state.visVel.y;
+  state.visVel.x += ax * dt; state.visVel.y += ay * dt; state.visVel.z += az * dt;
+  state.visPos.addScaledVector(state.visVel, dt);
+
+  /* ---- motors: winches track the COMMANDED chord; slack is what the swing leaves loose ---- */
+  for (const m of motors) {
+    _rel.subVectors(state.cmdPos, m.pos);
+    const chordCmd = _rel.length();
+    m.rate = state.cmdVel.lengthSq() ? _rel.dot(state.cmdVel) / chordCmd : 0;
+    m.Lpaid = chordCmd;
+    m.chordVis = _b.subVectors(state.visPos, m.pos).length();
+    m.slack = Math.max(m.Lpaid - m.chordVis, 0);
+    const rs = reelState(m.Lpaid);
+    m.layer = rs.layer;
+    m.rpm = 60 * Math.abs(m.rate) / (2 * Math.PI * rs.rEff);
+    m.rEff = rs.rEff;
+  }
+
+  /* ---- visuals ---- */
+  rig.position.copy(state.visPos);
+  if (state.cmdVel.lengthSq() > 1e-4) rig.rotation.y = -Math.atan2(state.cmdVel.z, state.cmdVel.x);
+  const leanX = state.visPos.x - state.cmdPos.x, leanZ = state.visPos.z - state.cmdPos.z;
+  rig.rotation.z = THREE.MathUtils.clamp(-leanX * 0.14, -0.35, 0.35);
+  rig.rotation.x = THREE.MathUtils.clamp( leanZ * 0.14, -0.35, 0.35);
+  cmdGhost.position.copy(state.cmdPos);
+
   for (let i = 0; i < motors.length; i++) {
     const m = motors[i];
-    const rel = _mid.subVectors(state.pos, m.pos);
-    m.L = rel.length();
-    m.rate = state.vel.lengthSq() ? rel.dot(state.vel) / m.L : 0;
-    // v1 stepping rule: step only when the next step lands closer than staying
-    let cur = m.steps * STEP_SIZE;
-    while (Math.abs((cur + Math.sign(m.L - cur) * STEP_SIZE) - m.L) < Math.abs(cur - m.L)) {
-      m.steps += Math.sign(m.L - cur);
-      cur = m.steps * STEP_SIZE;
-    }
+    const sag = m.slack > 0.02 ? Math.min(Math.sqrt(3 * m.chordVis * m.slack / 8), 9) : 0;
+    poseCable(cables[i], m.pos, state.visPos, sag);
   }
-
-  rig.position.copy(state.pos);
-  if (state.vel.lengthSq() > 1e-6) {
-    const yaw = Math.atan2(state.vel.z, state.vel.x);
-    rig.rotation.y = -yaw;
-  }
-  for (let i = 0; i < cables.length; i++) poseCable(cables[i], TOWERS[i].pos, state.pos);
   marker.material.opacity = Math.max(0, marker.material.opacity - dt * 0.55);
   marker.rotation.z += dt * 1.5;
 }
-
-/* seed motor state before first frame */
 tick(0);
-for (const m of motors) m.steps = Math.round(m.L / STEP_SIZE);
 
 /* ================= pointer: orbit vs click-to-fly ================= */
 const ray = new THREE.Raycaster();
@@ -432,17 +496,17 @@ const ndc = new THREE.Vector2();
 let downAt = null;
 const noteDown = e => { downAt = { x: e.clientX, y: e.clientY }; };
 canvas.addEventListener('pointerdown', noteDown);
-canvas.addEventListener('mousedown', noteDown);   // input paths without pointer events
+canvas.addEventListener('mousedown', noteDown);
 canvas.addEventListener('click', e => {
   const moved = downAt ? Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) : 0;
   downAt = null;
-  if (moved > 6) return;                        // that was a drag, not a click
+  if (moved > 6) return;
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, cam3);
   const hit = ray.intersectObject(field, false)[0];
   if (hit) {
     state.queue.length = 0;
-    setTarget(hit.point.x, state.pos.y, hit.point.z);
+    setTarget(hit.point.x, state.cmdPos.y, hit.point.z);
   }
 });
 
@@ -453,31 +517,35 @@ const rows = motors.map((m, i) => {
   div.className = 'motor-row';
   div.innerHTML = `
     <span class="chip" style="background:${COLORS[i]}"></span>
-    <span class="motor-name">${m.name} · ${m.corner}</span>
+    <span class="motor-name">${m.name} · ${m.corner}<small class="v-tension">taut</small></span>
     <span class="motor-val v-len">–</span>
     <span class="motor-val v-rate">–</span>
-    <span class="motor-val v-step">–</span>`;
+    <span class="motor-val v-reel">–</span>`;
   motorsEl.appendChild(div);
   return {
     len: div.querySelector('.v-len'),
     rate: div.querySelector('.v-rate'),
-    step: div.querySelector('.v-step'),
+    reel: div.querySelector('.v-reel'),
+    tension: div.querySelector('.v-tension'),
   };
 });
 
 function refreshReadouts() {
   for (let i = 0; i < motors.length; i++) {
     const m = motors[i];
-    rows[i].len.innerHTML  = `${m.L.toFixed(1)}<small>yd</small>`;
+    rows[i].len.innerHTML  = `${m.Lpaid.toFixed(1)}<small>yd out</small>`;
     const sign = m.rate > 0.005 ? '+' : '';
     rows[i].rate.innerHTML = `<span class="${m.rate > 0.005 ? 'rate-out' : ''}">${sign}${m.rate.toFixed(2)}</span><small>yd/s</small>`;
-    rows[i].step.innerHTML = `${Math.abs(m.rate / STEP_SIZE).toFixed(0)}<small>steps/s</small>`;
+    rows[i].reel.innerHTML = `${m.rpm.toFixed(1)}<small>rpm · L${m.layer}</small>`;
+    const slack = m.slack > 0.05;
+    rows[i].tension.textContent = slack ? `slack ${m.slack.toFixed(1)} yd` : 'taut';
+    rows[i].tension.classList.toggle('slack', slack);
   }
 }
 
 /* ================= strip chart (payout rate, last 30 s) ================= */
 const WINDOW_S = 30, SAMPLE_MS = 100;
-const samples = [];                    // { t, r: [r1..r4] }
+const samples = [];
 let lastSample = 0;
 
 const legendEl = document.getElementById('legend');
@@ -503,17 +571,15 @@ function drawChart() {
   const padL = 30, padR = 34, padT = 6, padB = 14;
   const iw = w - padL - padR, ih = h - padT - padB;
   const now = state.t;
-  const span = Math.max(8, Math.min(WINDOW_S, now));  // fill the width early on
+  const span = Math.max(8, Math.min(WINDOW_S, now));
   const t0 = now - span;
 
-  // y scale: symmetric, min ±2
   let peak = 2;
   for (const s of samples) for (const r of s.r) peak = Math.max(peak, Math.abs(r));
   peak = Math.ceil(peak / 2) * 2;
   const yOf = v => padT + ih / 2 - (v / peak) * (ih / 2);
   const xOf = t => padL + ((t - t0) / span) * iw;
 
-  // grid + ticks
   g.strokeStyle = css('--grid'); g.lineWidth = 1;
   g.fillStyle = css('--ink-muted'); g.font = '9.5px system-ui, sans-serif'; g.textAlign = 'right';
   for (const v of [peak, peak / 2, -peak / 2, -peak]) {
@@ -521,13 +587,11 @@ function drawChart() {
     g.beginPath(); g.moveTo(padL, y); g.lineTo(w - padR, y); g.stroke();
     g.fillText(v.toFixed(0), padL - 5, y + 3);
   }
-  // zero baseline
   g.strokeStyle = css('--baseline'); g.lineWidth = 1.5;
   g.beginPath(); g.moveTo(padL, yOf(0)); g.lineTo(w - padR, yOf(0)); g.stroke();
   g.fillText('0', padL - 5, yOf(0) + 3);
 
   if (samples.length > 1) {
-    // series lines
     for (let i = 0; i < 4; i++) {
       g.strokeStyle = COLORS[i]; g.lineWidth = 2; g.lineJoin = 'round';
       g.beginPath();
@@ -539,7 +603,6 @@ function drawChart() {
       }
       g.stroke();
     }
-    // direct labels at line ends, nudged apart
     const last = samples[samples.length - 1];
     const ends = last.r.map((v, i) => ({ i, y: yOf(v) })).sort((a, b) => a.y - b.y);
     for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 11) ends[k].y = ends[k - 1].y + 11;
@@ -552,7 +615,6 @@ function drawChart() {
     }
   }
 
-  // hover crosshair
   if (hoverX !== null && samples.length) {
     const tHover = t0 + ((hoverX - padL) / iw) * span;
     let best = null;
@@ -579,36 +641,44 @@ chart.addEventListener('pointerleave', () => { hoverX = null; });
 /* ================= controls ================= */
 const $ = id => document.getElementById(id);
 $('speed').addEventListener('input', e => {
-  state.speed = +e.target.value;
-  $('speed-out').textContent = state.speed.toFixed(1) + ' yd/s';
+  state.vmax = +e.target.value;
+  $('speed-out').textContent = state.vmax.toFixed(1) + ' yd/s';
+});
+$('accel').addEventListener('input', e => {
+  state.amax = +e.target.value;
+  $('accel-out').textContent = state.amax.toFixed(1) + ' yd/s²';
 });
 $('height').addEventListener('input', e => {
   const hgt = +e.target.value;
   $('height-out').textContent = hgt.toFixed(1) + ' yd';
-  const t = state.target ?? state.pos;
+  const t = state.target ?? state.cmdPos;
   setTarget(t.x, hgt, t.z);
 });
 $('btn-v1').addEventListener('click', () => {
   state.queue.length = 0;
   state.target = null;
-  state.pos.set(-50, 12, 0);
+  state.cmdPos.set(-50, 12, 0); state.cmdVel.set(0, 0, 0);
+  state.visPos.copy(state.cmdPos); state.visVel.set(0, 0, 0);
   $('height').value = 12; $('height-out').textContent = '12.0 yd';
   setTarget(50, 12, 0);
 });
 $('btn-lap').addEventListener('click', () => {
-  const h = +$('height').value;
   state.queue = [
-    new THREE.Vector3( 50, h, -20),
-    new THREE.Vector3(-50, h, -20),
-    new THREE.Vector3(-50, h,  20),
-    new THREE.Vector3( 50, h,  20),
-    new THREE.Vector3(  0, h,   0),
+    new THREE.Vector3( 50, 20, -20),
+    new THREE.Vector3(-50,  6, -20),
+    new THREE.Vector3(-50, 24,  20),
+    new THREE.Vector3( 50,  8,  20),
+    new THREE.Vector3(  0, 12,   0),
   ];
   state.target = null;
 });
 $('btn-center').addEventListener('click', () => {
   state.queue.length = 0;
   setTarget(0, +$('height').value, 0);
+});
+$('btn-stop').addEventListener('click', () => {
+  state.queue.length = 0;
+  state.target = null;          // governor decelerates cmdVel to zero at amax
 });
 $('btn-pause').addEventListener('click', e => {
   state.paused = !state.paused;
@@ -651,7 +721,7 @@ function frame(nowMs) {
 }
 requestAnimationFrame(frame);
 
-/* start with a gentle demo move so the chart isn't empty */
+/* opening demo move */
 setTarget(-30, 12, -10);
 </script>
 </body>

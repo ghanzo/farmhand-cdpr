@@ -13,42 +13,62 @@ point of the project: simple camera motion demands non-trivial motor control.
 
 ![nfl-camera](https://user-images.githubusercontent.com/22437742/196407908-cf30e197-1789-40a8-95c8-85206209ca5d.jpg)
 
-## The math (v2 — 3D, all four motors)
+## The math (v3 — motion profiles, dynamics, slack, reels)
 
-Towers hold the cable ends at fixed anchor points **T<sub>i</sub>**; the camera
-is at **P** = (x, y, z). Each cable length is 3D Pythagoras:
-
-```
-Lᵢ = |P − Tᵢ| = √( (x−xᵢ)² + (y−yᵢ)² + (z−zᵢ)² )
-```
-
-When the camera moves with velocity **v**, the required payout rate of each
-motor is the projection of that motion onto the cable direction:
+Towers hold the cable ends at fixed anchor points **T<sub>i</sub>**; the
+commanded camera position is **P** = (x, y, z). Each cable length is 3D
+Pythagoras, and the payout rate is the motion projected onto the cable:
 
 ```
-dLᵢ/dt = ( (P − Tᵢ) · v ) / Lᵢ
+Lᵢ = |P − Tᵢ|            dLᵢ/dt = ( (P − Tᵢ) · v ) / Lᵢ
 ```
 
-A straight, constant-speed camera path therefore requires four different motor
-speeds, all changing continuously through the move.
+**Motion profile** — the rig accelerates at a capped rate and its speed is
+governed so it can always brake to the target:
 
-**Stepper quantization** uses the v1 rule: the motor takes its next step only
-when that step lands *closer* to the ideal cable length than staying put, so the
-cable is never more than half a step (~2.5 cm) from ideal. Small steps at high
-rates → visually smooth motion.
+```
+|v| ≤ min( vmax, √(2 · a · d_remaining) )
+```
 
-*Simplification: cables are modeled as straight lines (no catenary sag). Real
-rigs compensate for sag and cable stretch — that's v3 territory.*
+Retargeting mid-flight just bends the trajectory — no precomputed profile.
+
+**Gondola dynamics** — the rendered gondola is a damped spring chasing the
+commanded point (`ẍ = ω²(P_cmd − x) − 2ζω·ẋ`), softer horizontally than
+vertically, so it lags under acceleration, swings through stops, and bobs as it
+settles. A faint ghost dot marks the commanded position the winches track.
+
+**Slack & sag** — winches pay cable for the *commanded* chord; when the
+swinging gondola ends up nearer a tower than commanded, that cable has excess
+length and droops with the parabolic catenary approximation:
+
+```
+slackᵢ = L_paid,ᵢ − |P_vis − Tᵢ|        sag ≈ √( 3 · D · slack / 8 )
+```
+
+The motor panel flags each cable taut / slack live.
+
+**Reel geometry** — each winch drum (0.35 yd core, 8 mm cable, 38 wraps per
+layer, 300 yd capacity) converts line speed to drum RPM through the effective
+radius of the working layer:
+
+```
+r_eff = r_core + layer · d_cable        RPM = 60 · |dL/dt| / (2π · r_eff)
+```
+
+Same line speed on a different layer → different RPM. That's why real winches
+encoder the cable, not just the motor.
 
 ## Using the sim
 
-- **Click the field** — camera flies to that spot at constant speed
+- **Click the field** — camera flies there under the acceleration profile
 - **Drag / scroll** — orbit and zoom the view
-- **Speed & height sliders** — travel speed (yd/s) and rig altitude (yd)
+- **Speed / Accel / Height sliders** — vmax (yd/s), amax (yd/s²), altitude (yd)
 - **v1 pass** — replays the original demo: one straight midfield pass
-- **Lap** — tours the four corners
-- Motor panel shows each cable's length, signed payout rate (+ out / − in), and
-  step frequency; the chart traces payout rates over the last 30 s
+- **3D lap** — tours the corners with altitude changes (full x/y/z motion)
+- **Stop** — brakes at the accel limit; watch the gondola swing and the near
+  cables drop slack
+- Motor panel: cable paid out, signed payout rate (+ out / − in), drum RPM +
+  working layer, taut/slack state; the chart traces payout rates (last 30 s)
 
 Implementation: a single `index.html` — Three.js (pinned CDN) for the 3D scene,
 a hand-rolled canvas strip chart, no build step. Units are yards; the field is a
