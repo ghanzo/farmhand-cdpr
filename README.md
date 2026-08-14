@@ -2,17 +2,19 @@
 
 **▶ Live demo: https://ghanzo.github.io/skycam-cdpr/**
 
-A browser simulator of a **cable-driven parallel robot (CDPR)** in the SkyCam
-configuration: a platform suspended over the field on four cables, positioned
-by paying cable in and out from motorized winches at the corners. The same
-architecture scales from broadcast cameras to warehouse cranes (NIST's
-RoboCrane) to field robots — a gondola that can carry a camera today and a
-tool later.
+A browser simulator of an **8-cable cable-driven parallel robot (CDPR)**: a
+platform held by eight cables from four corner masts — four suspending from
+the tower tops, four pulling back from low anchors — the antagonistic
+configuration that constrains all six degrees of freedom. The same
+architecture scales from broadcast SkyCams (the 4-cable version) to warehouse
+cranes (NIST's RoboCrane) to field robots — a gondola that can carry a camera
+today and a tool later.
 
-Click anywhere on the field and the camera flies there **at constant speed** —
-while four live motor readouts and a strip chart show each cable paying out at
-its own **continuously changing, non-linear rate**. That contrast is the entire
-point of the project: simple camera motion demands non-trivial motor control.
+Click anywhere on the field and the platform flies there under an
+acceleration-limited motion profile — while eight live motor readouts and a
+strip chart show each cable paying out at its own **continuously changing,
+non-linear rate**. That contrast is the entire point of the project: simple
+platform motion demands non-trivial motor control.
 
 ![nfl-camera](https://user-images.githubusercontent.com/22437742/196407908-cf30e197-1789-40a8-95c8-85206209ca5d.jpg)
 
@@ -68,14 +70,15 @@ r_eff = r_core + layer · d_cable        RPM = 60 · |dL/dt| / (2π · r_eff)
 Same line speed on a different layer → different RPM. That's why real winches
 encoder the cable, not just the motor.
 
-**Rigidity** — cables only pull, so a 4-cable suspended CDPR leans on gravity
-as its antagonist and its stiffness scales with cable tension. The Rigidity
-slider stands in for tension + control gain (vertical is held near critical
-damping so altitude only changes when commanded). Real-world rigidity upgrades,
-in rough order: higher preload tension, heavier platform, more cables pulling
-against each other (RoboCrane's 6-cable Stewart-style geometry; 8-cable CDPRs
-constrain all 6 DOF), input shaping so commands never excite the swing modes,
-and a self-stabilized end effector for the last few centimeters of precision.
+**Rigidity** — cables only pull, so constraint comes from cables opposing each
+other. This sim runs the full **8-cable configuration**: M1–M4 suspend from the
+tower tops, M5–M8 pull from low anchors on the same masts, giving antagonistic
+pairs that constrain all six degrees of freedom (RoboCrane / IPAnema style).
+Stiffness then scales with preload tension and control gain — the Rigidity
+slider stands in for both (vertical is held near critical damping so altitude
+only changes when commanded). Remaining real-world upgrades: heavier platform,
+input shaping so commands never excite the swing modes, and a self-stabilized
+end effector for the last few centimeters of precision.
 
 ## Using the sim
 

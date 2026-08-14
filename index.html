@@ -15,10 +15,14 @@
     --baseline:    #383835;
     --border:      rgba(255,255,255,0.10);
     --warn:        #fab219;
-    --m1: #3987e5;  /* NE — blue   */
-    --m2: #d95926;  /* NW — orange */
-    --m3: #199e70;  /* SW — aqua   */
-    --m4: #c98500;  /* SE — yellow */
+    --m1: #3987e5;  /* NE hi — blue    */
+    --m2: #d95926;  /* NW hi — orange  */
+    --m3: #199e70;  /* SW hi — aqua    */
+    --m4: #c98500;  /* SE hi — yellow  */
+    --m5: #d55181;  /* NE lo — magenta */
+    --m6: #008300;  /* NW lo — green   */
+    --m7: #9085e9;  /* SW lo — violet  */
+    --m8: #e66767;  /* SE lo — red     */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; overflow: hidden; }
@@ -127,7 +131,7 @@
 
 <div class="overlay-title">
   <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v3</span></h1>
-  <p>A cable-driven parallel robot (CDPR) in the SkyCam configuration — motion profiles, platform dynamics, reel geometry.</p>
+  <p>An 8-cable cable-driven parallel robot (CDPR) — four cables suspend, four pull back. Motion profiles, platform dynamics, reel geometry.</p>
   <div class="hint">Click the field to fly the camera there · drag to orbit · scroll to zoom</div>
 </div>
 
@@ -192,7 +196,7 @@
         <p><b>Reels</b> — payout speed maps to drum RPM through the effective radius, which grows as cable layers wind on:</p>
         <div class="eq">r<sub>eff</sub> = r<sub>core</sub> + layer · d<sub>cable</sub> &nbsp;&nbsp;·&nbsp;&nbsp; RPM = 60 · |dL/dt| / (2π · r<sub>eff</sub>)</div>
         <p class="why">Drum: 0.35 yd core radius, 8 mm cable, 38 wraps per layer, 300 yd capacity per winch. Same cable, same motor speed, different layer → different line speed. That’s why real winches encoder the cable, not just the motor.</p>
-        <p><b>Rigidity</b> — cables only pull, so a 4-cable suspended CDPR relies on gravity as the fifth “cable” and its stiffness scales with tension. The slider stands in for tension + control gain. Real rigidity upgrades: more cables pulling against each other (NIST RoboCrane uses 6; 8-cable machines constrain all six degrees of freedom), heavier platform, higher preload, and input shaping so commands never excite the swing modes.</p>
+        <p><b>Rigidity</b> — cables only pull, so constraint comes from cables opposing each other. This rig runs the full <b>8-cable configuration</b>: M1–M4 suspend from the tower tops, M5–M8 pull from low anchors on the same masts — antagonistic pairs that constrain all six degrees of freedom (the RoboCrane / IPAnema trick). Stiffness then scales with preload tension and control gain, which is what the slider stands in for.</p>
       </div>
     </details>
   </div>
@@ -216,11 +220,21 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 /* ================= world constants (units: yards) ================= */
 const FIELD_L = 120, FIELD_W = 53.33;
 const TOWER_H = 35;
-const TOWERS = [
-  { name: 'M1', corner: 'NE', pos: new THREE.Vector3( 72, TOWER_H, -34), css: '--m1' },
-  { name: 'M2', corner: 'NW', pos: new THREE.Vector3(-72, TOWER_H, -34), css: '--m2' },
-  { name: 'M3', corner: 'SW', pos: new THREE.Vector3(-72, TOWER_H,  34), css: '--m3' },
-  { name: 'M4', corner: 'SE', pos: new THREE.Vector3( 72, TOWER_H,  34), css: '--m4' },
+/* 8-cable configuration: 4 upper anchors suspend the platform, 4 lower
+   anchors on the same masts pull against them (antagonists) — together
+   they constrain all six degrees of freedom. */
+const CORNERS = [
+  { corner: 'NE', x:  72, z: -34 },
+  { corner: 'NW', x: -72, z: -34 },
+  { corner: 'SW', x: -72, z:  34 },
+  { corner: 'SE', x:  72, z:  34 },
+];
+const ANCHOR_LO = 2;
+const ANCHORS = [
+  ...CORNERS.map((c, i) => ({ name: 'M' + (i + 1), corner: c.corner, lvl: '↑',
+    pos: new THREE.Vector3(c.x, TOWER_H, c.z), css: '--m' + (i + 1) })),
+  ...CORNERS.map((c, i) => ({ name: 'M' + (i + 5), corner: c.corner, lvl: '↓',
+    pos: new THREE.Vector3(c.x, ANCHOR_LO, c.z), css: '--m' + (i + 5) })),
 ];
 const BOUND_X = 55, BOUND_Z = 24, H_MIN = 3, H_MAX = 30;
 
@@ -245,7 +259,7 @@ function setRigidity(r) {           // r in 0..1
 setRigidity(0.7);
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const COLORS = TOWERS.map(t => css(t.css));
+const COLORS = ANCHORS.map(t => css(t.css));
 
 /* ================= three.js scene ================= */
 const canvas = document.getElementById('scene');
@@ -313,19 +327,21 @@ const field = new THREE.Mesh(
 field.rotation.x = -Math.PI / 2;
 scene.add(field);
 
-for (const t of TOWERS) {
-  const col = new THREE.Color(css(t.css));
+for (const c of CORNERS) {
   const mast = new THREE.Mesh(
     new THREE.CylinderGeometry(0.55, 0.8, TOWER_H, 10),
     new THREE.MeshLambertMaterial({ color: 0x3a3a38 })
   );
-  mast.position.set(t.pos.x, TOWER_H / 2, t.pos.z);
+  mast.position.set(c.x, TOWER_H / 2, c.z);
   scene.add(mast);
+}
+for (const a of ANCHORS) {
+  const col = new THREE.Color(css(a.css));
   const head = new THREE.Mesh(
-    new THREE.SphereGeometry(1.15, 18, 14),
+    new THREE.SphereGeometry(a.lvl === '↑' ? 1.15 : 0.85, 18, 14),
     new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: 0.35 })
   );
-  head.position.copy(t.pos);
+  head.position.copy(a.pos);
   scene.add(head);
 }
 
@@ -357,7 +373,7 @@ const cmdGhost = new THREE.Mesh(
 scene.add(cmdGhost);
 
 /* ---- cables: taut by assumption, one straight member each ---- */
-const cables = TOWERS.map(t => {
+const cables = ANCHORS.map(t => {
   const m = new THREE.Mesh(
     new THREE.CylinderGeometry(0.085, 0.085, 1, 6, 1, true),
     new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) })
@@ -410,7 +426,7 @@ function reelState(paidOut) {
   return { layer, rEff: REEL.coreR + layer * REEL.cableD };
 }
 
-const motors = TOWERS.map(t => ({
+const motors = ANCHORS.map(t => ({
   ...t,
   Lpaid: 0, rate: 0, rpm: 0, layer: 0,
 }));
@@ -510,7 +526,7 @@ const rows = motors.map((m, i) => {
   div.className = 'motor-row';
   div.innerHTML = `
     <span class="chip" style="background:${COLORS[i]}"></span>
-    <span class="motor-name">${m.name} · ${m.corner}</span>
+    <span class="motor-name">${m.name} · ${m.corner}${m.lvl}</span>
     <span class="motor-val v-len">–</span>
     <span class="motor-val v-rate">–</span>
     <span class="motor-val v-reel">–</span>`;
@@ -540,7 +556,7 @@ let lastSample = 0;
 const legendEl = document.getElementById('legend');
 motors.forEach((m, i) => {
   const s = document.createElement('span');
-  s.innerHTML = `<span class="chip" style="background:${COLORS[i]}"></span>Motor ${i + 1} · ${m.corner}`;
+  s.innerHTML = `<span class="chip" style="background:${COLORS[i]}"></span>M${i + 1} ${m.corner}${m.lvl}`;
   legendEl.appendChild(s);
 });
 
@@ -581,7 +597,7 @@ function drawChart() {
   g.fillText('0', padL - 5, yOf(0) + 3);
 
   if (samples.length > 1) {
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < COLORS.length; i++) {
       g.strokeStyle = COLORS[i]; g.lineWidth = 2; g.lineJoin = 'round';
       g.beginPath();
       let started = false;
