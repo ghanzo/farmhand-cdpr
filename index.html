@@ -433,9 +433,8 @@ canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clie
 canvas.addEventListener('pointerup', e => {
   if (!downAt) return;
   const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
-  const held = performance.now() - downAt.t;
   downAt = null;
-  if (moved > 6 || held > 450) return;          // that was a drag, not a click
+  if (moved > 6) return;                        // that was a drag, not a click
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, cam3);
   const hit = ray.intersectObject(field, false)[0];
@@ -502,14 +501,15 @@ function drawChart() {
   const padL = 30, padR = 34, padT = 6, padB = 14;
   const iw = w - padL - padR, ih = h - padT - padB;
   const now = state.t;
-  const t0 = now - WINDOW_S;
+  const span = Math.max(8, Math.min(WINDOW_S, now));  // fill the width early on
+  const t0 = now - span;
 
   // y scale: symmetric, min ±2
   let peak = 2;
   for (const s of samples) for (const r of s.r) peak = Math.max(peak, Math.abs(r));
   peak = Math.ceil(peak / 2) * 2;
   const yOf = v => padT + ih / 2 - (v / peak) * (ih / 2);
-  const xOf = t => padL + ((t - t0) / WINDOW_S) * iw;
+  const xOf = t => padL + ((t - t0) / span) * iw;
 
   // grid + ticks
   g.strokeStyle = css('--grid'); g.lineWidth = 1;
@@ -552,7 +552,7 @@ function drawChart() {
 
   // hover crosshair
   if (hoverX !== null && samples.length) {
-    const tHover = t0 + ((hoverX - padL) / iw) * WINDOW_S;
+    const tHover = t0 + ((hoverX - padL) / iw) * span;
     let best = null;
     for (const s of samples) if (!best || Math.abs(s.t - tHover) < Math.abs(best.t - tHover)) best = s;
     if (best && best.t >= t0) {
@@ -618,6 +618,10 @@ $('btn-pause').addEventListener('click', e => {
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   cam3.aspect = innerWidth / innerHeight;
+  // side panel covers ~330px on the right — shift the composition left so
+  // the field centers in the visible area
+  if (innerWidth > 760) cam3.setViewOffset(innerWidth, innerHeight, 165, 0, innerWidth, innerHeight);
+  else cam3.clearViewOffset();
   cam3.updateProjectionMatrix();
 }
 addEventListener('resize', resize);
@@ -650,7 +654,7 @@ function frame(nowMs) {
 requestAnimationFrame(frame);
 
 /* start with a gentle demo move so the chart isn't empty */
-setTarget(30, 12, -12);
+setTarget(-30, 12, -10);
 </script>
 </body>
 </html>
