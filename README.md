@@ -16,6 +16,19 @@ point of the project: simple camera motion demands non-trivial motor control.
 
 ![nfl-camera](https://user-images.githubusercontent.com/22437742/196407908-cf30e197-1789-40a8-95c8-85206209ca5d.jpg)
 
+## The CDPR family
+
+The same four-cables-and-winches architecture, at three very different jobs:
+
+| Broadcast | Heavy work |
+|---|---|
+| ![Skycam at Beaver Stadium](docs/img/skycam-beaver-stadium.jpg) | ![NIST RoboCrane servicing a C-130](docs/img/robocrane-c130.jpg) |
+| A skycam working a Penn State game — the suspended 4-cable CDPR this sim models. *Photo: [Famartin](https://commons.wikimedia.org/wiki/File:2025-08-30_15_40_02_A_skycam_during_a_football_game_at_Beaver_Stadium_at_Pennsylvania_State_University_in_College_Township,_Centre_County,_Pennsylvania.jpg), CC BY-SA 4.0, via Wikimedia Commons* | NIST's RoboCrane suspending a worker cab to strip paint from a USAF C-130 — proof that cable platforms can do real work, not just carry cameras. *Photo: N.E. Wasson Jr./US Technologies, via [NIST](https://www.nist.gov/programs-projects/robocrane)* |
+
+And the biggest CDPR on Earth: the [FAST radio telescope](https://en.wikipedia.org/wiki/Five-hundred-meter_Aperture_Spherical_Telescope)
+in China flies its 30-ton receiver cabin over a 500 m dish on six cables from
+six towers — millimeter-precision positioning at building scale.
+
 ## The math (v3 — motion profiles, dynamics, slack, reels)
 
 Towers hold the cable ends at fixed anchor points **T<sub>i</sub>**; the
