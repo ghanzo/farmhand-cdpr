@@ -86,7 +86,8 @@ end effector for the last few centimeters of precision.
 - **Drag / scroll** — orbit and zoom the view
 - **Speed / Accel / Height sliders** — vmax (yd/s), amax (yd/s²), altitude (yd)
 - **v1 pass** — replays the original demo: one straight midfield pass
-- **3D lap** — tours the corners with altitude changes (full x/y/z motion)
+- **Lap** — tours the corners at the set height; translations are always flat —
+  altitude changes only when you move the Height slider
 - **Stop** — brakes at the accel limit; watch the gondola swing and settle
 - **Rigidity slider** — cable tension / control stiffness stand-in: loose rope
   at 0%, locked-in tracking at 100%

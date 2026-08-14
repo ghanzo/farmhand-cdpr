@@ -176,7 +176,7 @@
     </div>
     <div class="btns">
       <button id="btn-v1" title="Replay the v1 demo: one straight pass">v1 pass</button>
-      <button id="btn-lap" title="Tour the corners with altitude changes">3D lap</button>
+      <button id="btn-lap" title="Tour the corners at the set height — translations stay flat">Lap</button>
       <button id="btn-center" title="Return to midfield">Center</button>
       <button id="btn-stop" title="Brake to a stop — watch the gondola swing and settle">Stop</button>
       <button id="btn-pause" title="Freeze the simulation">Pause</button>
@@ -672,12 +672,13 @@ $('btn-v1').addEventListener('click', () => {
   setTarget(50, 12, 0);
 });
 $('btn-lap').addEventListener('click', () => {
+  const h = +$('height').value;      // translations stay on this plane
   state.queue = [
-    new THREE.Vector3( 50, 20, -20),
-    new THREE.Vector3(-50,  6, -20),
-    new THREE.Vector3(-50, 24,  20),
-    new THREE.Vector3( 50,  8,  20),
-    new THREE.Vector3(  0, 12,   0),
+    new THREE.Vector3( 50, h, -20),
+    new THREE.Vector3(-50, h, -20),
+    new THREE.Vector3(-50, h,  20),
+    new THREE.Vector3( 50, h,  20),
+    new THREE.Vector3(  0, h,   0),
   ];
   state.target = null;
 });
