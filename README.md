@@ -40,15 +40,9 @@ commanded point (`ẍ = ω²(P_cmd − x) − 2ζω·ẋ`), softer horizontally 
 vertically, so it lags under acceleration, swings through stops, and bobs as it
 settles. A faint ghost dot marks the commanded position the winches track.
 
-**Slack & sag** — winches pay cable for the *commanded* chord; when the
-swinging gondola ends up nearer a tower than commanded, that cable has excess
-length and droops with the parabolic catenary approximation:
-
-```
-slackᵢ = L_paid,ᵢ − |P_vis − Tᵢ|        sag ≈ √( 3 · D · slack / 8 )
-```
-
-The motor panel flags each cable taut / slack live.
+**Cables are assumed taut** — real rigs hold enough preload tension that the
+cables stay straight; the sim adopts that assumption and renders every cable
+as a straight member.
 
 **Reel geometry** — each winch drum (0.35 yd core, 8 mm cable, 38 wraps per
 layer, 300 yd capacity) converts line speed to drum RPM through the effective
@@ -77,10 +71,11 @@ and a self-stabilized end effector for the last few centimeters of precision.
 - **Speed / Accel / Height sliders** — vmax (yd/s), amax (yd/s²), altitude (yd)
 - **v1 pass** — replays the original demo: one straight midfield pass
 - **3D lap** — tours the corners with altitude changes (full x/y/z motion)
-- **Stop** — brakes at the accel limit; watch the gondola swing and the near
-  cables drop slack
+- **Stop** — brakes at the accel limit; watch the gondola swing and settle
+- **Rigidity slider** — cable tension / control stiffness stand-in: loose rope
+  at 0%, locked-in tracking at 100%
 - Motor panel: cable paid out, signed payout rate (+ out / − in), drum RPM +
-  working layer, taut/slack state; the chart traces payout rates (last 30 s)
+  working layer; the chart traces payout rates (last 30 s)
 
 Implementation: a single `index.html` — Three.js (pinned CDN) for the 3D scene,
 a hand-rolled canvas strip chart, no build step. Units are yards; the field is a

@@ -61,8 +61,6 @@
   .motor-row + .motor-row { border-top: 1px solid var(--grid); }
   .chip { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
   .motor-name { color: var(--ink); font-size: 12.5px; font-weight: 600; }
-  .motor-name small { display: block; font-size: 9px; font-weight: 600; letter-spacing: .4px; color: var(--ink-muted); }
-  .motor-name small.slack { color: var(--warn); }
   .motor-val  { font-variant-numeric: tabular-nums; text-align: right; font-size: 12.5px; color: var(--ink-2); }
   .motor-val small { display: block; color: var(--ink-muted); font-size: 9.5px; letter-spacing: .3px; }
   .rate-out { color: var(--ink); }
@@ -129,7 +127,7 @@
 
 <div class="overlay-title">
   <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v3</span></h1>
-  <p>A cable-driven parallel robot (CDPR) in the SkyCam configuration — motion profiles, platform dynamics, slack, reel geometry.</p>
+  <p>A cable-driven parallel robot (CDPR) in the SkyCam configuration — motion profiles, platform dynamics, reel geometry.</p>
   <div class="hint">Click the field to fly the camera there · drag to orbit · scroll to zoom</div>
 </div>
 
@@ -176,7 +174,7 @@
       <button id="btn-v1" title="Replay the v1 demo: one straight pass">v1 pass</button>
       <button id="btn-lap" title="Tour the corners with altitude changes">3D lap</button>
       <button id="btn-center" title="Return to midfield">Center</button>
-      <button id="btn-stop" title="Brake to a stop — watch the gondola swing and the near cables go slack">Stop</button>
+      <button id="btn-stop" title="Brake to a stop — watch the gondola swing and settle">Stop</button>
       <button id="btn-pause" title="Freeze the simulation">Pause</button>
     </div>
   </div>
@@ -191,8 +189,6 @@
         <div class="eq">|v| ≤ min( v<sub>max</sub>, √(2 · a · d<sub>remaining</sub>) )</div>
         <p><b>Gondola dynamics</b> — the rendered gondola is a damped spring chasing the commanded point (softer horizontally, stiffer vertically), so it lags under acceleration and bobs on arrival:</p>
         <div class="eq">ẍ = ω²(P<sub>cmd</sub> − x) − 2ζω·ẋ</div>
-        <p><b>Slack &amp; sag</b> — the winches pay cable for the <i>commanded</i> position; when the swinging gondola is nearer a tower than commanded, that cable has excess length and droops (parabolic approximation of a catenary):</p>
-        <div class="eq">slack<sub>i</sub> = L<sub>paid,i</sub> − |P<sub>vis</sub> − T<sub>i</sub>| &nbsp;&nbsp;·&nbsp;&nbsp; sag ≈ √( 3 · D · slack / 8 )</div>
         <p><b>Reels</b> — payout speed maps to drum RPM through the effective radius, which grows as cable layers wind on:</p>
         <div class="eq">r<sub>eff</sub> = r<sub>core</sub> + layer · d<sub>cable</sub> &nbsp;&nbsp;·&nbsp;&nbsp; RPM = 60 · |dL/dt| / (2π · r<sub>eff</sub>)</div>
         <p class="why">Drum: 0.35 yd core radius, 8 mm cable, 38 wraps per layer, 300 yd capacity per winch. Same cable, same motor speed, different layer → different line speed. That’s why real winches encoder the cable, not just the motor.</p>
@@ -360,19 +356,16 @@ const cmdGhost = new THREE.Mesh(
 );
 scene.add(cmdGhost);
 
-/* ---- cables: segmented so they can sag ---- */
-const CABLE_SEGS = 12;
+/* ---- cables: taut by assumption, one straight member each ---- */
 const cables = TOWERS.map(t => {
-  const segs = [];
-  const mat = new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) });
-  for (let i = 0; i < CABLE_SEGS; i++) {
-    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 1, 6, 1, true), mat);
-    scene.add(m);
-    segs.push(m);
-  }
-  return segs;
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.085, 0.085, 1, 6, 1, true),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) })
+  );
+  scene.add(m);
+  return m;
 });
-const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _mid = new THREE.Vector3(),
+const _b = new THREE.Vector3(), _mid = new THREE.Vector3(),
       _dir = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
 function poseSegment(mesh, a, b) {
   _dir.subVectors(b, a);
@@ -381,15 +374,6 @@ function poseSegment(mesh, a, b) {
   mesh.position.copy(_mid);
   mesh.scale.set(1, len, 1);
   mesh.quaternion.setFromUnitVectors(_up, _dir.normalize());
-}
-/* parabolic droop between tower top T and gondola P with midspan sag s */
-function poseCable(segs, T, P, sag) {
-  for (let i = 0; i < CABLE_SEGS; i++) {
-    const t0 = i / CABLE_SEGS, t1 = (i + 1) / CABLE_SEGS;
-    _a.lerpVectors(T, P, t0); _a.y -= 4 * sag * t0 * (1 - t0);
-    _b.lerpVectors(T, P, t1); _b.y -= 4 * sag * t1 * (1 - t1);
-    poseSegment(segs[i], _a, _b);
-  }
 }
 
 const marker = new THREE.Mesh(
@@ -473,14 +457,12 @@ function tick(dt) {
   state.visVel.x += ax * dt; state.visVel.y += ay * dt; state.visVel.z += az * dt;
   state.visPos.addScaledVector(state.visVel, dt);
 
-  /* ---- motors: winches track the COMMANDED chord; slack is what the swing leaves loose ---- */
+  /* ---- motors: winches track the commanded chord (tension assumed) ---- */
   for (const m of motors) {
     _rel.subVectors(state.cmdPos, m.pos);
     const chordCmd = _rel.length();
     m.rate = state.cmdVel.lengthSq() ? _rel.dot(state.cmdVel) / chordCmd : 0;
     m.Lpaid = chordCmd;
-    m.chordVis = _b.subVectors(state.visPos, m.pos).length();
-    m.slack = Math.max(m.Lpaid - m.chordVis, 0);
     const rs = reelState(m.Lpaid);
     m.layer = rs.layer;
     m.rpm = 60 * Math.abs(m.rate) / (2 * Math.PI * rs.rEff);
@@ -495,11 +477,7 @@ function tick(dt) {
   rig.rotation.x = THREE.MathUtils.clamp( leanZ * 0.14, -0.35, 0.35);
   cmdGhost.position.copy(state.cmdPos);
 
-  for (let i = 0; i < motors.length; i++) {
-    const m = motors[i];
-    const sag = m.slack > 0.02 ? Math.min(Math.sqrt(3 * m.chordVis * m.slack / 8), 9) : 0;
-    poseCable(cables[i], m.pos, state.visPos, sag);
-  }
+  for (let i = 0; i < motors.length; i++) poseSegment(cables[i], motors[i].pos, state.visPos);
   marker.material.opacity = Math.max(0, marker.material.opacity - dt * 0.55);
   marker.rotation.z += dt * 1.5;
 }
@@ -532,7 +510,7 @@ const rows = motors.map((m, i) => {
   div.className = 'motor-row';
   div.innerHTML = `
     <span class="chip" style="background:${COLORS[i]}"></span>
-    <span class="motor-name">${m.name} · ${m.corner}<small class="v-tension">taut</small></span>
+    <span class="motor-name">${m.name} · ${m.corner}</span>
     <span class="motor-val v-len">–</span>
     <span class="motor-val v-rate">–</span>
     <span class="motor-val v-reel">–</span>`;
@@ -541,7 +519,6 @@ const rows = motors.map((m, i) => {
     len: div.querySelector('.v-len'),
     rate: div.querySelector('.v-rate'),
     reel: div.querySelector('.v-reel'),
-    tension: div.querySelector('.v-tension'),
   };
 });
 
@@ -552,9 +529,6 @@ function refreshReadouts() {
     const sign = m.rate > 0.005 ? '+' : '';
     rows[i].rate.innerHTML = `<span class="${m.rate > 0.005 ? 'rate-out' : ''}">${sign}${m.rate.toFixed(2)}</span><small>yd/s</small>`;
     rows[i].reel.innerHTML = `${m.rpm.toFixed(1)}<small>rpm · L${m.layer}</small>`;
-    const slack = m.slack > 0.05;
-    rows[i].tension.textContent = slack ? `slack ${m.slack.toFixed(1)} yd` : 'taut';
-    rows[i].tension.classList.toggle('slack', slack);
   }
 }
 
