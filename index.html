@@ -618,7 +618,7 @@ $('btn-pause').addEventListener('click', e => {
 
 /* ================= main loop ================= */
 function resize() {
-  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.setSize(innerWidth, innerHeight);   // updates canvas CSS size too — critical under display scaling
   cam3.aspect = innerWidth / innerHeight;
   cam3.updateProjectionMatrix();
 }
