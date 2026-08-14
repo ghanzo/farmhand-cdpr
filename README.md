@@ -1,6 +1,6 @@
 # SkyCam Sim
 
-**▶ Live demo: https://ghanzo.github.io/Skycam-Sim--V1Motor/**
+**▶ Live demo: https://ghanzo.github.io/skycam-cdpr/**
 
 A browser simulator of a **cable-driven parallel robot (CDPR)** in the SkyCam
 configuration: a platform suspended over the field on four cables, positioned
