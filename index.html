@@ -429,10 +429,11 @@ for (const m of motors) m.steps = Math.round(m.L / STEP_SIZE);
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 let downAt = null;
-canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; });
-canvas.addEventListener('pointerup', e => {
-  if (!downAt) return;
-  const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+const noteDown = e => { downAt = { x: e.clientX, y: e.clientY }; };
+canvas.addEventListener('pointerdown', noteDown);
+canvas.addEventListener('mousedown', noteDown);   // input paths without pointer events
+canvas.addEventListener('click', e => {
+  const moved = downAt ? Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) : 0;
   downAt = null;
   if (moved > 6) return;                        // that was a drag, not a click
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
