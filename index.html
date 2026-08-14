@@ -129,7 +129,7 @@
 
 <div class="overlay-title">
   <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v3</span></h1>
-  <p>Four-motor cable camera — now with motion profiles, gondola dynamics, slack, and reel geometry.</p>
+  <p>A cable-driven parallel robot (CDPR) in the SkyCam configuration — motion profiles, platform dynamics, slack, reel geometry.</p>
   <div class="hint">Click the field to fly the camera there · drag to orbit · scroll to zoom</div>
 </div>
 
@@ -167,6 +167,11 @@
       <input type="range" id="height" min="3" max="30" step="0.5" value="12">
       <output id="height-out">12.0 yd</output>
     </div>
+    <div class="ctl">
+      <label for="rigid" title="Cable tension / control stiffness — how tightly the platform tracks the commanded point">Rigidity</label>
+      <input type="range" id="rigid" min="0" max="100" step="5" value="70">
+      <output id="rigid-out">70%</output>
+    </div>
     <div class="btns">
       <button id="btn-v1" title="Replay the v1 demo: one straight pass">v1 pass</button>
       <button id="btn-lap" title="Tour the corners with altitude changes">3D lap</button>
@@ -191,6 +196,7 @@
         <p><b>Reels</b> — payout speed maps to drum RPM through the effective radius, which grows as cable layers wind on:</p>
         <div class="eq">r<sub>eff</sub> = r<sub>core</sub> + layer · d<sub>cable</sub> &nbsp;&nbsp;·&nbsp;&nbsp; RPM = 60 · |dL/dt| / (2π · r<sub>eff</sub>)</div>
         <p class="why">Drum: 0.35 yd core radius, 8 mm cable, 38 wraps per layer, 300 yd capacity per winch. Same cable, same motor speed, different layer → different line speed. That’s why real winches encoder the cable, not just the motor.</p>
+        <p><b>Rigidity</b> — cables only pull, so a 4-cable suspended CDPR relies on gravity as the fifth “cable” and its stiffness scales with tension. The slider stands in for tension + control gain. Real rigidity upgrades: more cables pulling against each other (NIST RoboCrane uses 6; 8-cable machines constrain all six degrees of freedom), heavier platform, higher preload, and input shaping so commands never excite the swing modes.</p>
       </div>
     </details>
   </div>
@@ -230,8 +236,17 @@ const REEL = {
   capacity: 300,        // yd of cable on each winch
 };
 
-/* gondola spring-damper (horizontal swing softer than vertical stretch) */
-const DYN = { wH: 1.9, zH: 0.20, wV: 4.6, zV: 0.16 };
+/* gondola spring-damper, scaled by the Rigidity slider (cable tension /
+   control stiffness). Vertical runs near critical damping so height only
+   moves when commanded — no bounce on programmed paths. */
+const DYN = { wH: 0, zH: 0, wV: 0, zV: 0 };
+function setRigidity(r) {           // r in 0..1
+  DYN.wH = 1.6 + 3.4 * r;
+  DYN.zH = 0.25 + 0.75 * r;
+  DYN.wV = 4.0 + 4.0 * r;
+  DYN.zV = 0.85 + 0.15 * r;
+}
+setRigidity(0.7);
 
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const COLORS = TOWERS.map(t => css(t.css));
@@ -500,7 +515,7 @@ canvas.addEventListener('mousedown', noteDown);
 canvas.addEventListener('click', e => {
   const moved = downAt ? Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) : 0;
   downAt = null;
-  if (moved > 6) return;
+  if (moved > 14) return;   // generous: high-DPI mice drift a few px inside a genuine click
   ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   ray.setFromCamera(ndc, cam3);
   const hit = ray.intersectObject(field, false)[0];
@@ -647,6 +662,10 @@ $('speed').addEventListener('input', e => {
 $('accel').addEventListener('input', e => {
   state.amax = +e.target.value;
   $('accel-out').textContent = state.amax.toFixed(1) + ' yd/s²';
+});
+$('rigid').addEventListener('input', e => {
+  setRigidity(+e.target.value / 100);
+  $('rigid-out').textContent = e.target.value + '%';
 });
 $('height').addEventListener('input', e => {
   const hgt = +e.target.value;
