@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyCam Sim — 4-motor cable camera in 3D</title>
+<style>
+  :root {
+    --page:        #0d0d0d;
+    --surface:     #1a1a19;
+    --ink:         #ffffff;
+    --ink-2:       #c3c2b7;
+    --ink-muted:   #898781;
+    --grid:        #2c2c2a;
+    --baseline:    #383835;
+    --border:      rgba(255,255,255,0.10);
+    --m1: #3987e5;  /* NE — blue   */
+    --m2: #d95926;  /* NW — orange */
+    --m3: #199e70;  /* SW — aqua   */
+    --m4: #c98500;  /* SE — yellow */
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--page);
+    color: var(--ink-2);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  #scene { position: fixed; inset: 0; display: block; touch-action: none; }
+
+  .overlay-title {
+    position: fixed; top: 16px; left: 16px; z-index: 5;
+    pointer-events: none; text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  }
+  .overlay-title h1 { color: var(--ink); font-size: 18px; font-weight: 650; letter-spacing: .2px; }
+  .overlay-title p  { color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+  .overlay-title .hint { color: var(--ink-muted); font-size: 12px; margin-top: 6px; }
+
+  #panel {
+    position: fixed; top: 12px; right: 12px; bottom: 12px; z-index: 6;
+    width: 330px; overflow-y: auto; overscroll-behavior: contain;
+    display: flex; flex-direction: column; gap: 10px;
+    scrollbar-width: thin; scrollbar-color: var(--baseline) transparent;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .card h2 {
+    color: var(--ink-2); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
+  }
+
+  /* ---- motor readouts ---- */
+  .motor-row {
+    display: grid; grid-template-columns: 14px 58px 1fr 1fr 1fr; gap: 8px;
+    align-items: baseline; padding: 5px 0;
+  }
+  .motor-row + .motor-row { border-top: 1px solid var(--grid); }
+  .chip { width: 10px; height: 10px; border-radius: 3px; align-self: center; }
+  .motor-name { color: var(--ink); font-size: 12.5px; font-weight: 600; }
+  .motor-val  { font-variant-numeric: tabular-nums; text-align: right; font-size: 12.5px; color: var(--ink-2); }
+  .motor-val small { display: block; color: var(--ink-muted); font-size: 9.5px; letter-spacing: .3px; }
+  .rate-out { color: var(--ink); }
+  .head-row { display: grid; grid-template-columns: 14px 58px 1fr 1fr 1fr; gap: 8px; }
+  .head-row span { color: var(--ink-muted); font-size: 9.5px; text-transform: uppercase; letter-spacing: .5px; text-align: right; }
+
+  /* ---- chart ---- */
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-2); }
+  .legend .chip { width: 9px; height: 9px; }
+  #chart-wrap { position: relative; }
+  #chart { width: 100%; height: 150px; display: block; cursor: crosshair; }
+  #tooltip {
+    position: absolute; pointer-events: none; display: none; z-index: 8;
+    background: #232322; border: 1px solid var(--border); border-radius: 7px;
+    padding: 7px 9px; font-size: 11.5px; white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0,0,0,.5);
+  }
+  #tooltip .t { color: var(--ink-muted); margin-bottom: 3px; }
+  #tooltip .row { display: flex; align-items: center; gap: 6px; }
+  #tooltip .row b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; margin-left: auto; padding-left: 10px; }
+  .chart-note { color: var(--ink-muted); font-size: 10.5px; margin-top: 5px; }
+
+  /* ---- controls ---- */
+  .ctl { display: grid; grid-template-columns: 64px 1fr 52px; gap: 10px; align-items: center; padding: 4px 0; }
+  .ctl label { font-size: 12px; color: var(--ink-2); }
+  .ctl output { font-size: 12px; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 100%; accent-color: var(--m1); height: 18px; }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .btns button {
+    background: #232322; color: var(--ink-2); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 11px; font-size: 12px; cursor: pointer;
+    font-family: inherit;
+  }
+  .btns button:hover { background: #2c2c2a; color: var(--ink); }
+  .btns button.active { border-color: var(--m1); color: var(--ink); }
+
+  /* ---- math ---- */
+  details summary {
+    cursor: pointer; color: var(--ink-2); font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .8px; list-style: none;
+  }
+  details summary::before { content: "▸ "; color: var(--ink-muted); }
+  details[open] summary::before { content: "▾ "; }
+  .math { margin-top: 10px; font-size: 12.5px; }
+  .math .eq {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    color: var(--ink); background: #232322; border-radius: 6px;
+    padding: 8px 10px; margin: 6px 0; font-size: 12px; overflow-x: auto;
+  }
+  .math p { color: var(--ink-2); margin: 6px 0; }
+  .math .why { color: var(--ink-muted); font-size: 11.5px; }
+
+  .foot { color: var(--ink-muted); font-size: 10.5px; text-align: center; padding-bottom: 4px; }
+  .foot a { color: var(--ink-2); }
+
+  @media (max-width: 760px) {
+    #panel { top: auto; left: 12px; right: 12px; bottom: 12px; width: auto; max-height: 46vh; }
+    .overlay-title p, .overlay-title .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+
+<div class="overlay-title">
+  <h1>SkyCam Sim <span style="color:var(--ink-muted);font-weight:400">v2</span></h1>
+  <p>Four-motor cable camera — the 2D single-motor math of v1, now in 3D.</p>
+  <div class="hint">Click the field to fly the camera there · drag to orbit · scroll to zoom</div>
+</div>
+
+<div id="panel">
+  <div class="card">
+    <h2>Motors</h2>
+    <div class="head-row"><span></span><span></span><span>cable</span><span>payout</span><span>steps</span></div>
+    <div id="motors"></div>
+  </div>
+
+  <div class="card">
+    <h2>Cable payout rate</h2>
+    <div class="legend" id="legend"></div>
+    <div id="chart-wrap">
+      <canvas id="chart"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <div class="chart-note">yd/s · above 0 = paying out, below 0 = reeling in. Camera speed is constant — motor rates aren’t. That’s the whole point.</div>
+  </div>
+
+  <div class="card">
+    <h2>Controls</h2>
+    <div class="ctl">
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="2" max="25" step="0.5" value="8">
+      <output id="speed-out">8.0 yd/s</output>
+    </div>
+    <div class="ctl">
+      <label for="height">Height</label>
+      <input type="range" id="height" min="3" max="30" step="0.5" value="12">
+      <output id="height-out">12.0 yd</output>
+    </div>
+    <div class="btns">
+      <button id="btn-v1" title="Replay the v1 demo: one straight pass at constant speed">v1 pass</button>
+      <button id="btn-lap" title="Tour the four corners">Lap</button>
+      <button id="btn-center" title="Return to midfield">Center</button>
+      <button id="btn-pause" title="Freeze the simulation">Pause</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <details open>
+      <summary>The math</summary>
+      <div class="math">
+        <p>Towers hold cable ends at fixed points <b>T<sub>i</sub></b>. The camera sits at <b>P</b> = (x, y, z). Each cable’s length is just 3D Pythagoras:</p>
+        <div class="eq">L<sub>i</sub> = |P − T<sub>i</sub>| = √( (x−x<sub>i</sub>)² + (y−y<sub>i</sub>)² + (z−z<sub>i</sub>)² )</div>
+        <p>When the camera moves with velocity <b>v</b>, each motor must pay out (or reel in) at:</p>
+        <div class="eq">dL<sub>i</sub>/dt = ( (P − T<sub>i</sub>) · v ) / L<sub>i</sub></div>
+        <p class="why">The dot product projects the camera’s motion onto each cable’s direction — so a straight, constant-speed camera path demands four different, continuously changing motor speeds. Steppers approximate the ideal length with the v1 rule: take the next step only when it lands closer than staying put (error ≤ ½ step = 2.5 cm here). Cables are modeled straight — no catenary sag yet.</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="foot">
+    <a href="https://github.com/ghanzo/Skycam-Sim--V1Motor">source</a> · v1 (2022): single-motor 2D turtle demo, preserved in <a href="https://github.com/ghanzo/Skycam-Sim--V1Motor/tree/main/v1">/v1</a>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+} }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ================= world constants (units: yards) ================= */
+const FIELD_L = 120, FIELD_W = 53.33;          // NFL field incl. end zones
+const TOWER_H = 35;
+const TOWERS = [                                // cable anchor points (tops)
+  { name: 'M1', corner: 'NE', pos: new THREE.Vector3( 72, TOWER_H, -34), css: '--m1' },
+  { name: 'M2', corner: 'NW', pos: new THREE.Vector3(-72, TOWER_H, -34), css: '--m2' },
+  { name: 'M3', corner: 'SW', pos: new THREE.Vector3(-72, TOWER_H,  34), css: '--m3' },
+  { name: 'M4', corner: 'SE', pos: new THREE.Vector3( 72, TOWER_H,  34), css: '--m4' },
+];
+const BOUND_X = 55, BOUND_Z = 24;               // camera travel envelope
+const H_MIN = 3, H_MAX = 30;
+const STEP_SIZE = 0.0273;                        // yd per motor step (≈ 2.5 cm)
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COLORS = TOWERS.map(t => css(t.css));
+
+/* ================= three.js scene ================= */
+const canvas = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0d0d0d);
+scene.fog = new THREE.Fog(0x0d0d0d, 260, 420);
+
+const cam3 = new THREE.PerspectiveCamera(50, 1, 0.1, 600);
+cam3.position.set(95, 62, 118);
+
+const controls = new OrbitControls(cam3, canvas);
+controls.target.set(0, 8, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.49;
+controls.minDistance = 25;
+controls.maxDistance = 320;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(60, 120, 40);
+scene.add(sun);
+
+/* ---- ground + field ---- */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(900, 900),
+  new THREE.MeshLambertMaterial({ color: 0x141413 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.05;
+scene.add(ground);
+
+function fieldTexture() {
+  const c = document.createElement('canvas');
+  c.width = 1200; c.height = 533;
+  const g = c.getContext('2d');
+  g.fillStyle = '#2c6e31'; g.fillRect(0, 0, 1200, 533);
+  // mow stripes
+  for (let i = 0; i < 12; i++) {
+    if (i % 2) { g.fillStyle = 'rgba(255,255,255,0.045)'; g.fillRect(100 + i * (1000/12), 0, 1000/12, 533); }
+  }
+  // end zones
+  g.fillStyle = '#1d5322'; g.fillRect(0, 0, 100, 533); g.fillRect(1100, 0, 100, 533);
+  // lines every 5 yd
+  g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 3;
+  for (let ydl = 0; ydl <= 100; ydl += 5) {
+    const x = 100 + ydl * 10;
+    g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 533); g.stroke();
+  }
+  // hash marks
+  g.lineWidth = 2;
+  for (let ydl = 1; ydl < 100; ydl++) {
+    const x = 100 + ydl * 10;
+    for (const hy of [533*0.28, 533*0.72]) {
+      g.beginPath(); g.moveTo(x, hy - 5); g.lineTo(x, hy + 5); g.stroke();
+    }
+  }
+  // border
+  g.lineWidth = 6; g.strokeStyle = 'rgba(255,255,255,0.9)';
+  g.strokeRect(3, 3, 1194, 527);
+  const tx = new THREE.CanvasTexture(c);
+  tx.anisotropy = 8;
+  return tx;
+}
+const field = new THREE.Mesh(
+  new THREE.PlaneGeometry(FIELD_L, FIELD_W),
+  new THREE.MeshLambertMaterial({ map: fieldTexture() })
+);
+field.rotation.x = -Math.PI / 2;
+scene.add(field);
+
+/* ---- towers ---- */
+for (const t of TOWERS) {
+  const col = new THREE.Color(css(t.css));
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.8, TOWER_H, 10),
+    new THREE.MeshLambertMaterial({ color: 0x3a3a38 })
+  );
+  mast.position.set(t.pos.x, TOWER_H / 2, t.pos.z);
+  scene.add(mast);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(1.15, 18, 14),
+    new THREE.MeshLambertMaterial({ color: col, emissive: col, emissiveIntensity: 0.35 })
+  );
+  head.position.copy(t.pos);
+  scene.add(head);
+  t.head = head;
+}
+
+/* ---- camera rig (the shuttle) ---- */
+const rig = new THREE.Group();
+const body = new THREE.Mesh(
+  new THREE.BoxGeometry(1.6, 1.0, 1.0),
+  new THREE.MeshLambertMaterial({ color: 0xdedede })
+);
+const lens = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.32, 0.42, 0.7, 14),
+  new THREE.MeshLambertMaterial({ color: 0x222222 })
+);
+lens.rotation.z = Math.PI / 2;
+lens.position.x = 1.1;
+const hook = new THREE.Mesh(
+  new THREE.SphereGeometry(0.28, 10, 8),
+  new THREE.MeshLambertMaterial({ color: 0x888888 })
+);
+hook.position.y = 0.75;
+rig.add(body, lens, hook);
+scene.add(rig);
+
+/* ---- cables: thin cylinders re-posed each frame ---- */
+const cables = TOWERS.map(t => {
+  const m = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.09, 1, 6, 1, true),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(css(t.css)) })
+  );
+  scene.add(m);
+  return m;
+});
+const _mid = new THREE.Vector3(), _dir = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0);
+function poseCable(mesh, a, b) {
+  _dir.subVectors(b, a);
+  const len = _dir.length();
+  _mid.addVectors(a, b).multiplyScalar(0.5);
+  mesh.position.copy(_mid);
+  mesh.scale.set(1, len, 1);
+  mesh.quaternion.setFromUnitVectors(_up, _dir.normalize());
+}
+
+/* ---- click-target marker ---- */
+const marker = new THREE.Mesh(
+  new THREE.RingGeometry(1.1, 1.7, 36),
+  new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, side: THREE.DoubleSide })
+);
+marker.rotation.x = -Math.PI / 2;
+marker.position.y = 0.06;
+scene.add(marker);
+
+/* ================= simulation state ================= */
+const state = {
+  pos: new THREE.Vector3(0, 12, 0),
+  vel: new THREE.Vector3(),
+  target: null,
+  queue: [],
+  speed: 8,
+  paused: false,
+  t: 0,
+};
+const motors = TOWERS.map(t => ({
+  ...t,
+  L: 0, rate: 0,
+  steps: 0,                 // cumulative step count (quantized, v1 rule)
+}));
+
+function setTarget(x, y, z) {
+  state.target = new THREE.Vector3(
+    THREE.MathUtils.clamp(x, -BOUND_X, BOUND_X),
+    THREE.MathUtils.clamp(y, H_MIN, H_MAX),
+    THREE.MathUtils.clamp(z, -BOUND_Z, BOUND_Z)
+  );
+  marker.position.set(state.target.x, 0.06, state.target.z);
+  marker.material.opacity = 0.9;
+}
+
+function tick(dt) {
+  if (!state.target && state.queue.length) state.target = state.queue.shift().clone();
+
+  state.vel.set(0, 0, 0);
+  if (state.target) {
+    _dir.subVectors(state.target, state.pos);
+    const dist = _dir.length();
+    const step = state.speed * dt;
+    if (dist <= step) {
+      state.pos.copy(state.target);
+      state.target = null;
+    } else {
+      _dir.normalize();
+      state.vel.copy(_dir).multiplyScalar(state.speed);
+      state.pos.addScaledVector(_dir, step);
+    }
+  }
+
+  // motor math — the reason this page exists
+  for (let i = 0; i < motors.length; i++) {
+    const m = motors[i];
+    const rel = _mid.subVectors(state.pos, m.pos);
+    m.L = rel.length();
+    m.rate = state.vel.lengthSq() ? rel.dot(state.vel) / m.L : 0;
+    // v1 stepping rule: step only when the next step lands closer than staying
+    let cur = m.steps * STEP_SIZE;
+    while (Math.abs((cur + Math.sign(m.L - cur) * STEP_SIZE) - m.L) < Math.abs(cur - m.L)) {
+      m.steps += Math.sign(m.L - cur);
+      cur = m.steps * STEP_SIZE;
+    }
+  }
+
+  rig.position.copy(state.pos);
+  if (state.vel.lengthSq() > 1e-6) {
+    const yaw = Math.atan2(state.vel.z, state.vel.x);
+    rig.rotation.y = -yaw;
+  }
+  for (let i = 0; i < cables.length; i++) poseCable(cables[i], TOWERS[i].pos, state.pos);
+  marker.material.opacity = Math.max(0, marker.material.opacity - dt * 0.55);
+  marker.rotation.z += dt * 1.5;
+}
+
+/* seed motor state before first frame */
+tick(0);
+for (const m of motors) m.steps = Math.round(m.L / STEP_SIZE);
+
+/* ================= pointer: orbit vs click-to-fly ================= */
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let downAt = null;
+canvas.addEventListener('pointerdown', e => { downAt = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+canvas.addEventListener('pointerup', e => {
+  if (!downAt) return;
+  const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y);
+  const held = performance.now() - downAt.t;
+  downAt = null;
+  if (moved > 6 || held > 450) return;          // that was a drag, not a click
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, cam3);
+  const hit = ray.intersectObject(field, false)[0];
+  if (hit) {
+    state.queue.length = 0;
+    setTarget(hit.point.x, state.pos.y, hit.point.z);
+  }
+});
+
+/* ================= UI: readouts ================= */
+const motorsEl = document.getElementById('motors');
+const rows = motors.map((m, i) => {
+  const div = document.createElement('div');
+  div.className = 'motor-row';
+  div.innerHTML = `
+    <span class="chip" style="background:${COLORS[i]}"></span>
+    <span class="motor-name">${m.name} · ${m.corner}</span>
+    <span class="motor-val v-len">–</span>
+    <span class="motor-val v-rate">–</span>
+    <span class="motor-val v-step">–</span>`;
+  motorsEl.appendChild(div);
+  return {
+    len: div.querySelector('.v-len'),
+    rate: div.querySelector('.v-rate'),
+    step: div.querySelector('.v-step'),
+  };
+});
+
+function refreshReadouts() {
+  for (let i = 0; i < motors.length; i++) {
+    const m = motors[i];
+    rows[i].len.innerHTML  = `${m.L.toFixed(1)}<small>yd</small>`;
+    const sign = m.rate > 0.005 ? '+' : '';
+    rows[i].rate.innerHTML = `<span class="${m.rate > 0.005 ? 'rate-out' : ''}">${sign}${m.rate.toFixed(2)}</span><small>yd/s</small>`;
+    rows[i].step.innerHTML = `${Math.abs(m.rate / STEP_SIZE).toFixed(0)}<small>steps/s</small>`;
+  }
+}
+
+/* ================= strip chart (payout rate, last 30 s) ================= */
+const WINDOW_S = 30, SAMPLE_MS = 100;
+const samples = [];                    // { t, r: [r1..r4] }
+let lastSample = 0;
+
+const legendEl = document.getElementById('legend');
+motors.forEach((m, i) => {
+  const s = document.createElement('span');
+  s.innerHTML = `<span class="chip" style="background:${COLORS[i]}"></span>Motor ${i + 1} · ${m.corner}`;
+  legendEl.appendChild(s);
+});
+
+const chart = document.getElementById('chart');
+const ctx2d = chart.getContext('2d');
+const tipEl = document.getElementById('tooltip');
+let hoverX = null;
+
+function drawChart() {
+  const dpr = Math.min(devicePixelRatio, 2);
+  const w = chart.clientWidth, h = chart.clientHeight || 150;
+  if (chart.width !== w * dpr) { chart.width = w * dpr; chart.height = h * dpr; }
+  const g = ctx2d;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+
+  const padL = 30, padR = 34, padT = 6, padB = 14;
+  const iw = w - padL - padR, ih = h - padT - padB;
+  const now = state.t;
+  const t0 = now - WINDOW_S;
+
+  // y scale: symmetric, min ±2
+  let peak = 2;
+  for (const s of samples) for (const r of s.r) peak = Math.max(peak, Math.abs(r));
+  peak = Math.ceil(peak / 2) * 2;
+  const yOf = v => padT + ih / 2 - (v / peak) * (ih / 2);
+  const xOf = t => padL + ((t - t0) / WINDOW_S) * iw;
+
+  // grid + ticks
+  g.strokeStyle = css('--grid'); g.lineWidth = 1;
+  g.fillStyle = css('--ink-muted'); g.font = '9.5px system-ui, sans-serif'; g.textAlign = 'right';
+  for (const v of [peak, peak / 2, -peak / 2, -peak]) {
+    const y = yOf(v);
+    g.beginPath(); g.moveTo(padL, y); g.lineTo(w - padR, y); g.stroke();
+    g.fillText(v.toFixed(0), padL - 5, y + 3);
+  }
+  // zero baseline
+  g.strokeStyle = css('--baseline'); g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(padL, yOf(0)); g.lineTo(w - padR, yOf(0)); g.stroke();
+  g.fillText('0', padL - 5, yOf(0) + 3);
+
+  if (samples.length > 1) {
+    // series lines
+    for (let i = 0; i < 4; i++) {
+      g.strokeStyle = COLORS[i]; g.lineWidth = 2; g.lineJoin = 'round';
+      g.beginPath();
+      let started = false;
+      for (const s of samples) {
+        if (s.t < t0) continue;
+        const x = xOf(s.t), y = yOf(s.r[i]);
+        if (!started) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+      }
+      g.stroke();
+    }
+    // direct labels at line ends, nudged apart
+    const last = samples[samples.length - 1];
+    const ends = last.r.map((v, i) => ({ i, y: yOf(v) })).sort((a, b) => a.y - b.y);
+    for (let k = 1; k < ends.length; k++) if (ends[k].y - ends[k - 1].y < 11) ends[k].y = ends[k - 1].y + 11;
+    g.textAlign = 'left'; g.font = '600 9.5px system-ui, sans-serif';
+    for (const e of ends) {
+      g.fillStyle = COLORS[e.i];
+      g.fillRect(w - padR + 4, e.y - 3.5, 7, 7);
+      g.fillStyle = css('--ink-2');
+      g.fillText('M' + (e.i + 1), w - padR + 14, e.y + 3.5);
+    }
+  }
+
+  // hover crosshair
+  if (hoverX !== null && samples.length) {
+    const tHover = t0 + ((hoverX - padL) / iw) * WINDOW_S;
+    let best = null;
+    for (const s of samples) if (!best || Math.abs(s.t - tHover) < Math.abs(best.t - tHover)) best = s;
+    if (best && best.t >= t0) {
+      const x = xOf(best.t);
+      g.strokeStyle = '#52514e'; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x, padT); g.lineTo(x, h - padB); g.stroke();
+      tipEl.style.display = 'block';
+      const rect = chart.getBoundingClientRect();
+      tipEl.style.left = Math.min(x + 12, rect.width - 118) + 'px';
+      tipEl.style.top = '8px';
+      tipEl.innerHTML = `<div class="t">${(best.t - now).toFixed(1)} s</div>` +
+        best.r.map((v, i) =>
+          `<div class="row"><span class="chip" style="width:8px;height:8px;background:${COLORS[i]}"></span>M${i + 1}<b>${(v >= 0 ? '+' : '') + v.toFixed(2)}</b></div>`).join('');
+    }
+  } else {
+    tipEl.style.display = 'none';
+  }
+}
+chart.addEventListener('pointermove', e => { hoverX = e.offsetX; });
+chart.addEventListener('pointerleave', () => { hoverX = null; });
+
+/* ================= controls ================= */
+const $ = id => document.getElementById(id);
+$('speed').addEventListener('input', e => {
+  state.speed = +e.target.value;
+  $('speed-out').textContent = state.speed.toFixed(1) + ' yd/s';
+});
+$('height').addEventListener('input', e => {
+  const hgt = +e.target.value;
+  $('height-out').textContent = hgt.toFixed(1) + ' yd';
+  const t = state.target ?? state.pos;
+  setTarget(t.x, hgt, t.z);
+});
+$('btn-v1').addEventListener('click', () => {
+  state.queue.length = 0;
+  state.target = null;
+  state.pos.set(-50, 12, 0);
+  $('height').value = 12; $('height-out').textContent = '12.0 yd';
+  setTarget(50, 12, 0);
+});
+$('btn-lap').addEventListener('click', () => {
+  const h = +$('height').value;
+  state.queue = [
+    new THREE.Vector3( 50, h, -20),
+    new THREE.Vector3(-50, h, -20),
+    new THREE.Vector3(-50, h,  20),
+    new THREE.Vector3( 50, h,  20),
+    new THREE.Vector3(  0, h,   0),
+  ];
+  state.target = null;
+});
+$('btn-center').addEventListener('click', () => {
+  state.queue.length = 0;
+  setTarget(0, +$('height').value, 0);
+});
+$('btn-pause').addEventListener('click', e => {
+  state.paused = !state.paused;
+  e.target.textContent = state.paused ? 'Resume' : 'Pause';
+  e.target.classList.toggle('active', state.paused);
+});
+
+/* ================= main loop ================= */
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  cam3.aspect = innerWidth / innerHeight;
+  cam3.updateProjectionMatrix();
+}
+addEventListener('resize', resize);
+resize();
+
+let prev = performance.now();
+let uiAccum = 0;
+function frame(nowMs) {
+  requestAnimationFrame(frame);
+  const dt = Math.min((nowMs - prev) / 1000, 0.05);
+  prev = nowMs;
+
+  if (!state.paused) {
+    state.t += dt;
+    tick(dt);
+    if ((state.t * 1000) - lastSample >= SAMPLE_MS) {
+      lastSample = state.t * 1000;
+      samples.push({ t: state.t, r: motors.map(m => m.rate) });
+      while (samples.length && samples[0].t < state.t - WINDOW_S - 1) samples.shift();
+    }
+  }
+
+  uiAccum += dt;
+  if (uiAccum > 0.1) { uiAccum = 0; refreshReadouts(); }
+  drawChart();
+
+  controls.update();
+  renderer.render(scene, cam3);
+}
+requestAnimationFrame(frame);
+
+/* start with a gentle demo move so the chart isn't empty */
+setTarget(30, 12, -12);
+</script>
+</body>
+</html>

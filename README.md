@@ -1,59 +1,66 @@
+# SkyCam Sim
+
+**▶ Live demo: https://ghanzo.github.io/Skycam-Sim--V1Motor/**
+
+A browser simulator of an NFL-style SkyCam: a camera suspended over the field on
+four cables, positioned by paying cable in and out from motorized reels at the
+stadium corners.
+
+Click anywhere on the field and the camera flies there **at constant speed** —
+while four live motor readouts and a strip chart show each cable paying out at
+its own **continuously changing, non-linear rate**. That contrast is the entire
+point of the project: simple camera motion demands non-trivial motor control.
+
 ![nfl-camera](https://user-images.githubusercontent.com/22437742/196407908-cf30e197-1789-40a8-95c8-85206209ca5d.jpg)
-# Skycam-Sim - Version 1
 
-## Motor Control for SkyCam movement in 2D
+## The math (v2 — 3D, all four motors)
 
-### NFL Skycam for dynamic aerial footage
+Towers hold the cable ends at fixed anchor points **T<sub>i</sub>**; the camera
+is at **P** = (x, y, z). Each cable length is 3D Pythagoras:
 
+```
+Lᵢ = |P − Tᵢ| = √( (x−xᵢ)² + (y−yᵢ)² + (z−zᵢ)² )
+```
 
-The camera can be positioned anywhere over the field by extending the 4 cables to the correct lengths!
+When the camera moves with velocity **v**, the required payout rate of each
+motor is the projection of that motion onto the cable direction:
 
-- Controlled by 4 motors placed at ground level outside stadium.
-- Cables strung in a rectangular pattern over the top of the stadium.
-- Cables meet in the center of the stadium and connect to the camera.
-- Cables length is controlled by motors.
-- All 4 lengths determine the position.
+```
+dLᵢ/dt = ( (P − Tᵢ) · v ) / Lᵢ
+```
 
-# Movement
-- Movement of the camera requires non-linear motor behavior
-- Stepper motors STEP a fraction of an rpm per electronic pulse
-- RPM can be controlled by rate of pulses sent to motors
+A straight, constant-speed camera path therefore requires four different motor
+speeds, all changing continuously through the move.
 
-## Defining Variables
+**Stepper quantization** uses the v1 rule: the motor takes its next step only
+when that step lands *closer* to the ideal cable length than staying put, so the
+cable is never more than half a step (~2.5 cm) from ideal. Small steps at high
+rates → visually smooth motion.
 
-### We start by determining the dimensions of the grid
+*Simplification: cables are modeled as straight lines (no catenary sag). Real
+rigs compensate for sag and cable stretch — that's v3 territory.*
 
-![image](https://user-images.githubusercontent.com/22437742/196411690-18810a2d-2860-47a4-bd04-6d09efc81c22.png)
+## Using the sim
 
-### We then declare the variables of the translation
+- **Click the field** — camera flies to that spot at constant speed
+- **Drag / scroll** — orbit and zoom the view
+- **Speed & height sliders** — travel speed (yd/s) and rig altitude (yd)
+- **v1 pass** — replays the original demo: one straight midfield pass
+- **Lap** — tours the four corners
+- Motor panel shows each cable's length, signed payout rate (+ out / − in), and
+  step frequency; the chart traces payout rates over the last 30 s
 
-![image](https://user-images.githubusercontent.com/22437742/196411988-76732b6d-7b40-4e05-bcfc-9a6930f4b04a.png)
+Implementation: a single `index.html` — Three.js (pinned CDN) for the 3D scene,
+a hand-rolled canvas strip chart, no build step. Units are yards; the field is a
+regulation 120 × 53.3 yd.
 
-### We then declare a time-to and a time-total
+## v1 (2022) — where this started
 
-![image](https://user-images.githubusercontent.com/22437742/196412625-fafc8d33-6a49-435f-b22b-c55925f699d4.png)
+Version 1 reduced the problem to its essence: **one motor, one straight-line
+translation, in 2D**, animated with Python turtle graphics. The camera moved at a
+constant rate while the top-right motor's step rate changed non-linearly through
+the translation. The original write-up, math images, and code are preserved in
+[`/v1`](./v1/).
 
-## (X,Y) Camera Position across translation found with these formulas
-
-![image](https://user-images.githubusercontent.com/22437742/196412707-f9860628-331d-4ae5-967b-d64d702c3059.png)
-
-## Cable Length from Top-Right-Motor found with this formula 
-
-![image](https://user-images.githubusercontent.com/22437742/196414562-5f51b5f6-e9d3-4876-b39b-f2f97f648c0a.png)
-
-
-# Stepping the motor
-
-Once we know what the length of the cable *should* be at any time, we then step to that position, and make a variable that steps once more. If the next step is closer to the requisite position, then we step once more, and calculate the next one after again. So the resolution of the cable length is off by 1/2 step distance, but since there are hundreds of steps per rpm that is close enough. If the steps were much larger we would see shaky movement, but since they are small the movement will be smooth.
-
-# This instantiation
-
-For demonstrating the math in simple form; one translation and one motor. Uses python package 'Turtle' for graphically representing the translation. Notice the camera, or what I am calling the 'shuttle', moves at a constant rate, but the top-right-motor step-rate changes non linearly throughout the translation.
-
-## Code can be run at my repl
-
-https://replit.com/@gonzo/movement-via-time#main.py
-
-## Math demonstrated here
-
-https://www.desmos.com/calculator/h2k6fdmklq
+- v1 on Replit: https://replit.com/@gonzo/movement-via-time#main.py
+- v1 math on Desmos: https://www.desmos.com/calculator/h2k6fdmklq
