@@ -11,7 +11,7 @@ const LEVEL_POSE: Pose = {
 describe('inverse cable kinematics', () => {
   it('returns one positive length and Jacobian row per cable', () => {
     const states = solveCableKinematics(createFarmGeometry(), LEVEL_POSE);
-    expect(states).toHaveLength(8);
+    expect(states).toHaveLength(12);
     expect(states.every((state) => state.length > 0)).toBe(true);
     expect(states.every((state) => state.jacobianRow.length === 6)).toBe(true);
   });

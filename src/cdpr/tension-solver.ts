@@ -49,8 +49,22 @@ export function solveStaticTensions(
 
   const residual = Math.sqrt(residualVector.reduce((sum, value) => sum + value * value, 0));
   const peak = Math.max(...tensions, 0);
-  const averageVerticalAuthority = cableStates.length
-    ? cableStates.reduce((sum, state) => sum + Math.max(0, state.directionFromPlatform.y), 0) / cableStates.length
+  const directions = [
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [Math.SQRT1_2, Math.SQRT1_2, 0],
+    [Math.SQRT1_2, 0, Math.SQRT1_2],
+    [0, Math.SQRT1_2, Math.SQRT1_2],
+  ];
+  const weakestDirectionalAuthority = cableStates.length
+    ? Math.min(...directions.map((direction) => cableStates.reduce((sum, state) => {
+      const unit = state.directionFromPlatform;
+      const projection = unit.x * (direction[0] ?? 0)
+        + unit.y * (direction[1] ?? 0)
+        + unit.z * (direction[2] ?? 0);
+      return sum + projection * projection;
+    }, 0) / cableStates.length))
     : 0;
   const forceTolerance = Math.max(8, massKg * GRAVITY * 0.025);
 
@@ -59,7 +73,7 @@ export function solveStaticTensions(
     residual,
     feasible: residual <= forceTolerance && tensions.every((value) => value >= bounds.min && value <= bounds.max),
     utilization: bounds.max > 0 ? peak / bounds.max : 1,
-    stiffnessProxy: averageVerticalAuthority * (1 - Math.min(1, peak / Math.max(bounds.max, 1))),
+    stiffnessProxy: weakestDirectionalAuthority * (1 - Math.min(1, peak / Math.max(bounds.max, 1))),
   };
 }
 

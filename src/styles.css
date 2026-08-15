@@ -347,6 +347,212 @@ a {
   line-height: 1.5;
 }
 
+.research-evidence {
+  padding: clamp(64px, 8vw, 120px) clamp(22px, 6vw, 92px);
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 85% 8%, rgba(112, 193, 179, 0.09), transparent 32rem),
+    #0e1c15;
+}
+
+.research-heading,
+.paper-figures,
+.finding-grid,
+.architecture-study {
+  width: min(1320px, 100%);
+  margin-inline: auto;
+}
+
+.research-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+  gap: clamp(30px, 7vw, 96px);
+  align-items: end;
+}
+
+.research-heading h2,
+.architecture-copy h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(38px, 5vw, 68px);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  text-transform: none;
+}
+
+.research-heading h2 em,
+.architecture-copy h2 em {
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.research-heading > p,
+.architecture-copy > p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.paper-figures {
+  margin-top: clamp(42px, 6vw, 76px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.paper-figure {
+  margin: 0;
+  display: grid;
+  grid-template-rows: minmax(260px, auto) 1fr;
+  border: 1px solid var(--line);
+  background: #f5f5f0;
+}
+
+.paper-figure img {
+  width: 100%;
+  height: 100%;
+  max-height: 420px;
+  display: block;
+  object-fit: contain;
+}
+
+.paper-figure figcaption {
+  padding: 20px;
+  display: grid;
+  gap: 7px;
+  color: var(--ink);
+  background: var(--panel-strong);
+}
+
+.paper-figure figcaption > span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.paper-figure figcaption strong {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.paper-figure figcaption small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.paper-figure a,
+.finding-grid a {
+  color: var(--accent);
+}
+
+.finding-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+}
+
+.finding-grid article {
+  min-height: 300px;
+  padding: clamp(24px, 3vw, 38px);
+  position: relative;
+  background: var(--panel);
+}
+
+.finding-index {
+  position: absolute;
+  top: 26px;
+  right: 28px;
+  color: rgba(234, 240, 232, 0.17);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 44px;
+}
+
+.finding-grid h3 {
+  max-width: 330px;
+  margin: 24px 0 14px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 400;
+  line-height: 1.08;
+}
+
+.finding-grid article > p:not(.eyebrow) {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.finding-grid a {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.architecture-study {
+  margin-top: clamp(72px, 9vw, 130px);
+  display: grid;
+  grid-template-columns: minmax(290px, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(36px, 7vw, 100px);
+  align-items: end;
+}
+
+.architecture-copy h2 {
+  margin-bottom: 22px;
+  font-size: clamp(34px, 4vw, 54px);
+}
+
+.architecture-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.architecture-cards article {
+  min-height: 230px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  background: rgba(20, 39, 30, 0.8);
+}
+
+.architecture-cards article.recommended {
+  border-color: rgba(228, 198, 93, 0.75);
+  box-shadow: inset 0 3px 0 var(--accent);
+}
+
+.architecture-number {
+  margin-bottom: auto;
+  color: var(--accent);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 50px;
+}
+
+.architecture-cards strong {
+  font-size: 12px;
+}
+
+.architecture-cards p {
+  margin: 7px 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.architecture-cards small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
 .workspace {
   min-height: 0;
   display: grid;
@@ -622,7 +828,7 @@ button.quiet {
 
 .cable-row {
   display: grid;
-  grid-template-columns: 23px minmax(48px, 1fr) 48px;
+  grid-template-columns: 32px minmax(48px, 1fr) 48px;
   gap: 8px;
   align-items: center;
 }
@@ -669,6 +875,15 @@ button.quiet {
 @media (max-width: 1080px) {
   .vision-story {
     grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+  }
+
+  .research-heading,
+  .architecture-study {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-cards {
+    max-width: 760px;
   }
 
   .workspace {
@@ -728,6 +943,19 @@ button.quiet {
 
   .vision-story {
     grid-template-columns: 1fr;
+  }
+
+  .paper-figures,
+  .finding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-cards article {
+    min-height: 180px;
   }
 
   .workspace {

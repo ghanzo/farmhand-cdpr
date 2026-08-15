@@ -1,23 +1,27 @@
-import type { CableDefinition, FarmGeometry, Tower, Vec3 } from '../types';
+import type { CableConfiguration, CableDefinition, FarmGeometry, Tower, Vec3 } from '../types';
 
 export interface GeometryOptions {
   fieldWidth: number;
   fieldLength: number;
   towerHeight: number;
+  lowerAnchorHeight: number;
   towerMargin: number;
   platformWidth: number;
   platformLength: number;
   anchorSeparation: number;
+  cableConfiguration: CableConfiguration;
 }
 
 export const DEFAULT_GEOMETRY: GeometryOptions = {
   fieldWidth: 10,
   fieldLength: 10,
   towerHeight: 9,
+  lowerAnchorHeight: 3.5,
   towerMargin: 1.5,
   platformWidth: 1.8,
   platformLength: 1.4,
   anchorSeparation: 0.8,
+  cableConfiguration: 12,
 };
 
 export function createFarmGeometry(options: Partial<GeometryOptions> = {}): FarmGeometry {
@@ -46,31 +50,58 @@ export function createFarmGeometry(options: Partial<GeometryOptions> = {}): Farm
     if (!tower) continue;
     const inwardX = -corner.sx;
     const inwardZ = -corner.sz;
-    const anchors: [Vec3, Vec3] = [
+    const candidates: Array<{ band: 'upper' | 'lower'; anchor: Vec3; attachment: Vec3 }> = [
       {
-        x: tower.position.x + inwardX * config.anchorSeparation * 0.5,
-        y: config.towerHeight,
-        z: tower.position.z,
+        band: 'upper',
+        anchor: {
+          x: tower.position.x + inwardX * config.anchorSeparation * 0.5,
+          y: config.towerHeight,
+          z: tower.position.z,
+        },
+        attachment: { x: corner.sx * platformHalfX, y: 0, z: corner.sz * platformHalfZ * 0.58 },
       },
       {
-        x: tower.position.x,
-        y: config.towerHeight,
-        z: tower.position.z + inwardZ * config.anchorSeparation * 0.5,
+        band: 'upper',
+        anchor: {
+          x: tower.position.x,
+          y: config.towerHeight,
+          z: tower.position.z + inwardZ * config.anchorSeparation * 0.5,
+        },
+        attachment: { x: corner.sx * platformHalfX * 0.58, y: 0, z: corner.sz * platformHalfZ },
+      },
+      {
+        band: 'lower',
+        anchor: {
+          x: tower.position.x + inwardX * config.anchorSeparation * 0.5,
+          y: config.lowerAnchorHeight,
+          z: tower.position.z,
+        },
+        attachment: { x: corner.sx * platformHalfX * 0.76, y: 0, z: corner.sz * platformHalfZ * 0.32 },
+      },
+      {
+        band: 'lower',
+        anchor: {
+          x: tower.position.x,
+          y: config.lowerAnchorHeight,
+          z: tower.position.z + inwardZ * config.anchorSeparation * 0.5,
+        },
+        attachment: { x: corner.sx * platformHalfX * 0.32, y: 0, z: corner.sz * platformHalfZ * 0.76 },
       },
     ];
-    const attachments: [Vec3, Vec3] = [
-      { x: corner.sx * platformHalfX, y: 0, z: corner.sz * platformHalfZ * 0.58 },
-      { x: corner.sx * platformHalfX * 0.58, y: 0, z: corner.sz * platformHalfZ },
-    ];
+    const selected = config.cableConfiguration === 8
+      ? [candidates[0], candidates[2]]
+      : config.cableConfiguration === 12
+        ? [candidates[0], candidates[1], candidates[2]]
+        : candidates;
 
-    anchors.forEach((anchor, pairIndex) => {
-      const attachment = attachments[pairIndex];
-      if (!attachment) return;
+    selected.forEach((candidate, cableIndex) => {
+      if (!candidate) return;
       cables.push({
-        id: `C${towerIndex * 2 + pairIndex + 1}`,
+        id: `C${towerIndex * selected.length + cableIndex + 1}`,
         towerId: tower.id,
-        anchor,
-        attachment,
+        band: candidate.band,
+        anchor: candidate.anchor,
+        attachment: candidate.attachment,
       });
     });
   }
@@ -81,6 +112,8 @@ export function createFarmGeometry(options: Partial<GeometryOptions> = {}): Farm
     towerMargin: config.towerMargin,
     platformWidth: config.platformWidth,
     platformLength: config.platformLength,
+    cableConfiguration: config.cableConfiguration,
+    lowerAnchorHeight: config.lowerAnchorHeight,
     towers,
     cables,
   };

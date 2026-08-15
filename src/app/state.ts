@@ -1,10 +1,12 @@
 import type { OperationId } from '../farm/operations';
-import type { MotionState, Pose, TensionBounds, Vec3 } from '../types';
+import type { CableConfiguration, MotionState, Pose, TensionBounds, Vec3 } from '../types';
 
 export interface SimulatorSettings {
   fieldSize: number;
   towerHeight: number;
+  lowerAnchorHeight: number;
   carrierHeight: number;
+  cableConfiguration: CableConfiguration;
   payloadKg: number;
   stageExtension: number;
   maxSpeed: number;
@@ -26,9 +28,11 @@ export interface SimulatorState {
 export const DEFAULT_SETTINGS: SimulatorSettings = {
   fieldSize: 10,
   towerHeight: 9,
+  lowerAnchorHeight: 3.5,
   carrierHeight: 5.5,
+  cableConfiguration: 12,
   payloadKg: 85,
-  stageExtension: 2.4,
+  stageExtension: 4.5,
   maxSpeed: 1.8,
   maxAcceleration: 1.1,
   operation: 'scan',

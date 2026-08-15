@@ -3,16 +3,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import type { FarmOperation } from '../farm/operations';
 import type { CableKinematicState, FarmGeometry, Pose, Vec3 } from '../types';
 
-const CABLE_COLORS = [
-  0xffc857,
-  0xf68e5f,
-  0x70c1b3,
-  0x57a6d9,
-  0xc59bff,
-  0xe66f91,
-  0xa6d96a,
-  0xf2c14e,
-];
+const UPPER_CABLE_COLORS = [0xffc857, 0xf68e5f, 0xf2c14e, 0xe4c65d];
+const LOWER_CABLE_COLORS = [0x70c1b3, 0x57a6d9, 0x8fd7c8, 0x66b7d8];
 
 export class FarmScene {
   private readonly scene = new THREE.Scene();
@@ -98,14 +90,6 @@ export class FarmScene {
     );
     this.carrier.add(deck, equipment, this.verticalStage, this.toolHead);
 
-    for (let index = 0; index < 8; index += 1) {
-      const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-      const material = new THREE.LineBasicMaterial({ color: CABLE_COLORS[index] ?? 0xffffff, transparent: true, opacity: 0.92 });
-      const line = new THREE.Line(geometry, material);
-      this.cableLines.push(line);
-      this.cableGroup.add(line);
-    }
-
     this.canvas.addEventListener('pointerdown', this.handlePointerStart);
     this.canvas.addEventListener('pointerup', this.handlePointerUp);
     this.canvas.addEventListener('pointercancel', () => {
@@ -125,6 +109,8 @@ export class FarmScene {
     clearGroup(this.fieldGroup);
     clearGroup(this.towerGroup);
     clearGroup(this.cropGroup);
+    clearGroup(this.cableGroup);
+    this.cableLines.length = 0;
 
     const apron = new THREE.Mesh(
       new THREE.PlaneGeometry(geometry.fieldWidth + 7, geometry.fieldLength + 7),
@@ -172,16 +158,23 @@ export class FarmScene {
     });
 
     geometry.cables.forEach((cable, index) => {
+      const color = cableColor(cable.band, index);
       const pulley = new THREE.Mesh(
         new THREE.SphereGeometry(0.12, 12, 8),
         new THREE.MeshStandardMaterial({
-          color: CABLE_COLORS[index] ?? 0xffffff,
-          emissive: CABLE_COLORS[index] ?? 0xffffff,
+          color,
+          emissive: color,
           emissiveIntensity: 0.18,
         }),
       );
       pulley.position.set(cable.anchor.x, cable.anchor.y, cable.anchor.z);
       this.towerGroup.add(pulley);
+
+      const lineGeometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+      const lineMaterial = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.92 });
+      const line = new THREE.Line(lineGeometry, lineMaterial);
+      this.cableLines.push(line);
+      this.cableGroup.add(line);
     });
 
     addMixedPlanting(this.cropGroup, geometry.fieldWidth, geometry.fieldLength);
@@ -257,6 +250,11 @@ export class FarmScene {
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
   }
+}
+
+function cableColor(band: 'upper' | 'lower', index: number): number {
+  const palette = band === 'upper' ? UPPER_CABLE_COLORS : LOWER_CABLE_COLORS;
+  return palette[index % palette.length] ?? 0xffffff;
 }
 
 function clearGroup(group: THREE.Group): void {

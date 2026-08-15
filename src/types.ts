@@ -21,9 +21,13 @@ export interface Tower {
   height: number;
 }
 
+export type CableConfiguration = 8 | 12 | 16;
+export type CableBand = 'upper' | 'lower';
+
 export interface CableDefinition {
   id: string;
   towerId: string;
+  band: CableBand;
   anchor: Vec3;
   attachment: Vec3;
 }
@@ -34,6 +38,8 @@ export interface FarmGeometry {
   towerMargin: number;
   platformWidth: number;
   platformLength: number;
+  cableConfiguration: CableConfiguration;
+  lowerAnchorHeight: number;
   towers: Tower[];
   cables: CableDefinition[];
 }

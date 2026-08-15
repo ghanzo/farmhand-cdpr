@@ -6,7 +6,7 @@ Farmhand uses two positioning systems:
 
 | Layer | Responsibility |
 |---|---|
-| Four towers and winches | Generate field-scale cable geometry and tension |
+| Four towers and 8/12/16 winches | Generate field-scale cable geometry, preload, and tension |
 | Suspended carrier | Move payload rapidly above the canopy |
 | Rigid vertical stage | Reach downward without adding a free pendulum |
 | Local arm or wrist | Final orientation, obstacle avoidance, and compliance |
@@ -47,10 +47,19 @@ tool-force direction.
 
 ## Carrier configuration
 
-The pilot uses eight independent cable measurements and eight distinct carrier
-attachments. It aims to keep the carrier approximately level; the local arm is
-responsible for most tool orientation. This is a design hypothesis, not a final
-commitment to full six-degree-of-freedom cable control.
+The simulator compares three independently driven configurations. The
+eight-cable baseline uses one upper and one lower connection at each tower. The
+12-cable working hypothesis uses two upper and one lower connection per tower.
+The 16-cable study uses two upper and two lower connections per tower for the
+greatest redundancy and bidirectional wrench authority—and the greatest drive,
+sensing, control, and maintenance burden.
+
+The carrier operates between the upper and lower anchor planes. Lower cables
+must remain above the crop, access, sag, and motion-clearance envelope; a rigid
+stage reaches downward from the elevated carrier. All layouts use distinct
+carrier attachment points and aim to keep the carrier approximately level while
+the local arm supplies most tool orientation. Cable count alone does not prove
+wrench closure, stiffness, or structural safety.
 
 ## Safety architecture
 
