@@ -8,7 +8,7 @@ import { FARM_OPERATIONS, getOperation, type OperationId } from './farm/operatio
 import { estimateThroughput } from './farm/throughput';
 import { magnitude } from './math/vector';
 import { advanceMotion } from './simulation/controller';
-import type { FarmGeometry, Vec3 } from './types';
+import type { CableConfiguration, FarmGeometry, Vec3 } from './types';
 import { FarmScene } from './visualization/scene';
 
 const root = document.querySelector<HTMLDivElement>('#app');
@@ -30,6 +30,7 @@ root.innerHTML = `
         <span id="system-status">Evaluating workspace</span>
       </div>
       <nav aria-label="Project links">
+        <a href="#research">Research</a>
         <a href="https://github.com/ghanzo/farmhand-cdpr/blob/main/docs/farm-concept.md">Concept</a>
         <a href="https://github.com/ghanzo/farmhand-cdpr">GitHub</a>
       </nav>
@@ -38,8 +39,8 @@ root.innerHTML = `
     <section class="vision-intro" aria-labelledby="vision-title">
       <div class="vision-hero">
         <img
-          src="${baseUrl}vision/farmhand-terrain-scale.webp"
-          alt="Aerial concept visualization of a four-tower cable robot spanning an entire multi-field farm"
+          src="${baseUrl}vision/farmhand-12-cable-field.webp"
+          alt="Aerial concept visualization of a twelve-cable Farmhand robot spanning an entire multi-field farm"
           width="1536"
           height="864"
           fetchpriority="high"
@@ -48,35 +49,116 @@ root.innerHTML = `
         <div class="vision-hero-copy">
           <p class="eyebrow">A new field architecture</p>
           <h1 id="vision-title">Farming beyond<br><em>tractor-defined rows.</em></h1>
-          <p>Four towers move one intelligent carrier above a living, diversified field—bringing sensing and precision tools to each plant without routinely driving heavy equipment across the soil.</p>
+          <p>Four towers and a twelve-cable high/low geometry move one intelligent carrier above a living field—bringing sensing and precision tools to each plant without routinely driving heavy equipment across the soil.</p>
           <div class="vision-actions">
             <a class="hero-link hero-link-primary" href="#simulator">Enter the simulator</a>
             <a class="hero-link" href="https://github.com/ghanzo/farmhand-cdpr/blob/main/docs/farm-concept.md">Read the concept</a>
           </div>
-          <span class="concept-label">Concept visualization · ultimate farm-scale architecture</span>
+          <span class="concept-label">Concept visualization · 12-cable Farmhand research configuration</span>
         </div>
       </div>
 
       <div class="vision-story">
         <figure>
           <img
-            src="${baseUrl}vision/plant-precision.webp"
-            alt="Concept visualization of a rigid tool stage reaching from a cable carrier to inspect a tomato plant"
+            src="${baseUrl}vision/farmhand-high-low-carrier.webp"
+            alt="Concept visualization of upper and lower tower cables stabilizing an elevated carrier with a rigid tool stage"
             width="1536"
             height="1024"
             loading="lazy"
           />
-          <figcaption>Concept visualization · macro positioning above, plant-level tooling below</figcaption>
+          <figcaption>Concept visualization · antagonistic cable geometry above the crop-clearance plane</figcaption>
         </figure>
         <div class="vision-story-copy">
           <p class="eyebrow">Macro reach. Plant precision.</p>
           <h2>One infrastructure.<br>Many kinds of field work.</h2>
-          <p>The cable system covers the plot. A rigid stage and local arm solve the final metres—navigating foliage, orienting sensors, and placing crop-specific tools where they are needed.</p>
+          <p>Upper cables carry the moving mass. Lower cables pull against them to create preload and bidirectional constraint. A rigid stage then solves the final metres without lowering the farm-scale cable network into the crop.</p>
           <ol class="vision-principles">
-            <li><strong>Keep weight at the edge</strong><span>Towers, winches, tanks, and service access stay outside the cropped soil.</span></li>
-            <li><strong>Keep the carrier above the canopy</strong><span>The vertical stage reaches down without dragging farm-scale cables through plants.</span></li>
-            <li><strong>Measure before scaling</strong><span>Start with scanning and targeted spraying on a 10 × 10 metre pilot.</span></li>
+            <li><strong>Separate upper and lower anchors</strong><span>The carrier remains between the anchor planes so positive preload can resist disturbance.</span></li>
+            <li><strong>Protect a clear working envelope</strong><span>Every lower cable stays above the crop, access, sag, and motion allowance.</span></li>
+            <li><strong>Compare before committing</strong><span>The simulator exposes 8, 12, and 16-cable studies rather than presenting one topology as settled.</span></li>
           </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="research-evidence" id="research" aria-labelledby="research-title">
+      <div class="research-heading">
+        <div>
+          <p class="eyebrow">Published evidence → Farmhand hypothesis</p>
+          <h2 id="research-title">Design the workspace.<br><em>Then draw the machine.</em></h2>
+        </div>
+        <p>Farmhand’s high/low cable study is grounded in cable-robot workspace, tension, stiffness, and large-span research. Published results are shown as evidence; the 12 and 16-cable layouts remain design hypotheses to test.</p>
+      </div>
+
+      <div class="paper-figures">
+        <figure class="paper-figure">
+          <img src="${baseUrl}research/agrocablebot-reconfigurable-workspace.png" alt="AgroCableBot reconfigurable cable robot and expanded workspace diagram" width="1440" height="620" loading="lazy" />
+          <figcaption>
+            <span>Published configuration</span>
+            <strong>Movable proximal anchors reshape the reachable volume.</strong>
+            <small>Adapted crop of Figure 3 from García-Vanegas et al., <a href="https://doi.org/10.3390/robotics12060165">AgroCableBot</a>, Robotics 2023. CC BY 4.0.</small>
+          </figcaption>
+        </figure>
+        <figure class="paper-figure">
+          <img src="${baseUrl}research/agrocablebot-workspace-tension.png" alt="AgroCableBot three-dimensional workspace and cable tension distribution" width="1560" height="620" loading="lazy" />
+          <figcaption>
+            <span>Published result</span>
+            <strong>Workspace and tension must be evaluated together.</strong>
+            <small>Adapted crop of Figure 11 from García-Vanegas et al., <a href="https://doi.org/10.3390/robotics12060165">AgroCableBot</a>, Robotics 2023. CC BY 4.0.</small>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="finding-grid">
+        <article>
+          <span class="finding-index">01</span>
+          <p class="eyebrow">Wrench closure</p>
+          <h3>Eight cables are a beginning, not a guarantee.</h3>
+          <p>For six-degree-of-freedom constraint, the wrench matrix must be full rank and admit positive internal tension. Cable count alone cannot establish rigidity.</p>
+          <a href="https://www.lirmm.fr/~krut/pdf/2008_gouttefarde_ark-1697187840/2008_gouttefarde_ark.pdf">Gouttefarde et al. →</a>
+        </article>
+        <article>
+          <span class="finding-index">02</span>
+          <p class="eyebrow">Preload</p>
+          <h3>More tension is not always more stiffness.</h3>
+          <p>Internal forces can raise stiffness in stabilizable poses and reduce it in others. Farmhand therefore displays a weakest-direction authority proxy while reserving true stiffness for later elastic modeling.</p>
+          <a href="https://doi.org/10.1016/j.robot.2019.01.012">Bolboli et al. →</a>
+        </article>
+        <article>
+          <span class="finding-index">03</span>
+          <p class="eyebrow">Large span</p>
+          <h3>Sag becomes part of the mechanism.</h3>
+          <p>At field scale, cable mass, elasticity, wind, and catenary clearance can dominate the straight-line geometry used in an early simulator.</p>
+          <a href="https://doi.org/10.3390/machines10070565">Zhang et al. →</a>
+        </article>
+      </div>
+
+      <div class="architecture-study" aria-labelledby="architecture-title">
+        <div class="architecture-copy">
+          <p class="eyebrow">Farmhand configuration study</p>
+          <h2 id="architecture-title">From minimum constraint<br>to active redundancy.</h2>
+          <p>Twelve independently controlled cables—two upper and one lower at each tower—are the working hypothesis. Sixteen cable drives remain the heavy-duty branch for stronger bidirectional wrench authority, stiffness tuning, and cable-failure research.</p>
+        </div>
+        <div class="architecture-cards">
+          <article>
+            <span class="architecture-number">08</span>
+            <strong>Baseline</strong>
+            <p>1 upper + 1 lower per tower</p>
+            <small>Lowest complexity · limited redundancy</small>
+          </article>
+          <article class="recommended">
+            <span class="architecture-number">12</span>
+            <strong>Working hypothesis</strong>
+            <p>2 upper + 1 lower per tower</p>
+            <small>More lift · active preload · manageable pilot</small>
+          </article>
+          <article>
+            <span class="architecture-number">16</span>
+            <strong>Heavy-duty study</strong>
+            <p>2 upper + 2 lower per tower</p>
+            <small>Maximum redundancy · highest system complexity</small>
+          </article>
         </div>
       </div>
     </section>
@@ -86,8 +168,22 @@ root.innerHTML = `
         <div class="panel-intro">
           <p class="eyebrow">Pilot plot 01</p>
           <h2 class="panel-title">Test the<br><em>pilot geometry.</em></h2>
-          <p>Move the carrier across a mixed planting while eight independent cables remain under positive tension.</p>
+          <p>Compare high/low tower layouts while every active cable remains under positive tension.</p>
         </div>
+
+        <section class="control-section">
+          <div class="section-heading">
+            <h2>Cable architecture</h2>
+            <span id="drive-count">12 active drives</span>
+          </div>
+          <label class="sr-only" for="cable-configuration">Cable architecture</label>
+          <select id="cable-configuration" class="select-control">
+            <option value="8">8 cables · baseline</option>
+            <option value="12" selected>12 cables · working hypothesis</option>
+            <option value="16">16 cables · heavy-duty study</option>
+          </select>
+          <p class="control-note" id="architecture-description"></p>
+        </section>
 
         <section class="control-section">
           <div class="section-heading">
@@ -103,9 +199,10 @@ root.innerHTML = `
 
         <section class="control-section control-grid">
           ${rangeControl('field-size', 'Plot width', 8, 24, 1, 10, 'm')}
-          ${rangeControl('tower-height', 'Tower height', 6, 18, 0.5, 9, 'm')}
+          ${rangeControl('tower-height', 'Upper anchor', 6, 18, 0.5, 9, 'm')}
+          ${rangeControl('lower-anchor-height', 'Lower anchor', 2.5, 6, 0.1, 3.5, 'm')}
           ${rangeControl('carrier-height', 'Carrier height', 3, 12, 0.1, 5.5, 'm')}
-          ${rangeControl('stage-extension', 'Tool stage', 0.8, 5, 0.1, 2.4, 'm')}
+          ${rangeControl('stage-extension', 'Tool stage', 0.8, 7, 0.1, 4.5, 'm')}
           ${rangeControl('payload', 'Moving mass', 35, 260, 5, 85, 'kg')}
           ${rangeControl('speed', 'Travel speed', 0.4, 4, 0.1, 1.8, 'm/s')}
         </section>
@@ -127,7 +224,7 @@ root.innerHTML = `
         </div>
         <div class="scene-label scene-label-bottom">
           <span>Architecture</span>
-          <strong>4 towers · 8 cables · rigid tool stage</strong>
+          <strong id="architecture-readout">4 towers · 12 cables · high/low anchors</strong>
         </div>
       </section>
 
@@ -140,13 +237,14 @@ root.innerHTML = `
             ${metric('residual', 'Wrench residual', '—', 'N')}
             ${metric('speed-metric', 'Carrier speed', '—', 'm/s')}
             ${metric('pass-time', 'Estimated pass', '—', 'h')}
+            ${metric('stiffness-proxy', 'Rigidity proxy', '—', '')}
           </div>
         </section>
 
         <section class="cable-section">
           <div class="section-heading">
             <h2>Cable state</h2>
-            <span>length · tension</span>
+            <span>band · length · tension</span>
           </div>
           <div id="cable-list" class="cable-list"></div>
         </section>
@@ -177,6 +275,7 @@ farmScene.setTargetHandler((point) => {
 createCableRows();
 bindControls();
 updateOperationCopy();
+updateArchitectureCopy();
 requestAnimationFrame(frame);
 
 function frame(now: number): void {
@@ -220,11 +319,17 @@ function frame(now: number): void {
 
   if (now - lastUiUpdate > 100) {
     lastUiUpdate = now;
-    updateTelemetry(cableStates, tension.tensions, tension.residual, tension.feasible);
+    updateTelemetry(cableStates, tension.tensions, tension.residual, tension.feasible, tension.stiffnessProxy);
   }
 }
 
 function bindControls(): void {
+  getElement<HTMLSelectElement>('cable-configuration').addEventListener('change', (event) => {
+    simulator.settings.cableConfiguration = Number((event.currentTarget as HTMLSelectElement).value) as CableConfiguration;
+    rebuildGeometry();
+    updateArchitectureCopy();
+  });
+
   getElement<HTMLSelectElement>('operation').addEventListener('change', (event) => {
     simulator.settings.operation = (event.currentTarget as HTMLSelectElement).value as OperationId;
     updateOperationCopy();
@@ -232,15 +337,17 @@ function bindControls(): void {
 
   bindRange('field-size', (value) => {
     simulator.settings.fieldSize = value;
-    geometry = makeGeometry();
-    farmScene.rebuild(geometry);
+    rebuildGeometry();
     simulator.target.x = clamp(simulator.target.x, -value / 2 + 0.5, value / 2 - 0.5);
     simulator.target.z = clamp(simulator.target.z, -value / 2 + 0.5, value / 2 - 0.5);
   });
   bindRange('tower-height', (value) => {
     simulator.settings.towerHeight = value;
-    geometry = makeGeometry();
-    farmScene.rebuild(geometry);
+    rebuildGeometry();
+  });
+  bindRange('lower-anchor-height', (value) => {
+    simulator.settings.lowerAnchorHeight = value;
+    rebuildGeometry();
   });
   bindRange('carrier-height', (value) => {
     simulator.settings.carrierHeight = value;
@@ -285,6 +392,7 @@ function updateTelemetry(
   tensions: number[],
   residual: number,
   feasible: boolean,
+  stiffnessProxy: number,
 ): void {
   const operation = getOperation(simulator.settings.operation);
   const throughput = estimateThroughput(
@@ -298,6 +406,7 @@ function updateTelemetry(
   setText('residual', residual.toFixed(1));
   setText('speed-metric', magnitude(velocity).toFixed(2));
   setText('pass-time', throughput.hoursPerPass.toFixed(1));
+  setText('stiffness-proxy', stiffnessProxy.toFixed(2));
   setText(
     'position-readout',
     `${simulator.motion.position.x.toFixed(1)} · ${simulator.motion.position.y.toFixed(1)} · ${simulator.motion.position.z.toFixed(1)} m`,
@@ -306,8 +415,15 @@ function updateTelemetry(
   const status = getElement<HTMLElement>('system-status');
   const statusDot = getElement<HTMLElement>('status-dot');
   const stageClearance = simulator.motion.position.y - simulator.settings.stageExtension;
-  const safe = feasible && stageClearance > 0.25;
-  status.textContent = safe ? 'Pose is tension-feasible' : stageClearance <= 0.25 ? 'Tool stage intersects ground' : 'Pose exceeds tension model';
+  const carrierAboveLowerBand = simulator.motion.position.y > simulator.settings.lowerAnchorHeight + 0.5;
+  const safe = feasible && stageClearance > 0.25 && carrierAboveLowerBand;
+  status.textContent = safe
+    ? 'Pose is tension-feasible'
+    : stageClearance <= 0.25
+      ? 'Tool stage intersects ground'
+      : !carrierAboveLowerBand
+        ? 'Carrier is below the lower-cable working plane'
+        : 'Pose exceeds tension model';
   statusDot.classList.toggle('warning', !safe);
 
   cableStates.forEach((cableState, index) => {
@@ -330,12 +446,30 @@ function createCableRows(): void {
   const list = getElement<HTMLElement>('cable-list');
   list.innerHTML = geometry.cables.map((cable, index) => `
     <div class="cable-row" id="cable-${index}">
-      <span class="cable-id">${cable.id}</span>
-      <span class="cable-track"><span class="cable-fill" style="--cable-color: var(--cable-${index + 1})"></span></span>
+      <span class="cable-id">${cable.id}${cable.band === 'upper' ? 'U' : 'L'}</span>
+      <span class="cable-track"><span class="cable-fill" style="--cable-color: ${cable.band === 'upper' ? '#e4c65d' : '#70c1b3'}"></span></span>
       <span class="cable-value">— N</span>
       <span class="cable-meta">— m · — rpm</span>
     </div>
   `).join('');
+}
+
+function updateArchitectureCopy(): void {
+  const count = simulator.settings.cableConfiguration;
+  const descriptions: Record<CableConfiguration, string> = {
+    8: 'One upper and one lower cable per tower: the lowest-complexity high/low baseline.',
+    12: 'Two upper and one lower cable per tower: the current balance of lift, preload, and pilot complexity.',
+    16: 'Two upper and two lower cables per tower: maximum active redundancy for the heavy-duty study.',
+  };
+  setText('drive-count', `${count} active drives`);
+  setText('architecture-description', descriptions[count]);
+  setText('architecture-readout', `4 towers · ${count} cables · high/low anchors`);
+}
+
+function rebuildGeometry(): void {
+  geometry = makeGeometry();
+  farmScene.rebuild(geometry);
+  createCableRows();
 }
 
 function updateOperationCopy(): void {
@@ -352,6 +486,8 @@ function makeGeometry(): FarmGeometry {
     fieldWidth: simulator.settings.fieldSize,
     fieldLength: simulator.settings.fieldSize,
     towerHeight: simulator.settings.towerHeight,
+    lowerAnchorHeight: simulator.settings.lowerAnchorHeight,
+    cableConfiguration: simulator.settings.cableConfiguration,
   });
 }
 

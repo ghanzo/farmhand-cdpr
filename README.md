@@ -9,23 +9,25 @@
 **[Read the farm concept](docs/farm-concept.md)** ·
 **[Explore the research roadmap](docs/research-roadmap.md)**
 
-![Farmhand CDPR concept spanning an entire multi-field farm](public/vision/farmhand-terrain-scale.webp)
+![Farmhand CDPR concept spanning an entire multi-field farm](public/vision/farmhand-12-cable-field.webp)
 
 *Concept visualization of the ultimate farm-scale architecture: four perimeter
 towers spanning many fields. The engineering roadmap starts with a much smaller
 10 × 10 metre pilot.*
 
 Farmhand is an open engineering study for a cable-driven parallel robot (CDPR)
-that works above a diversified crop plot. Four towers and eight cables move a
-carrier across the field; a rigid vertical stage and local tool provide the
-last metres of reach and plant-level precision.
+that works above a diversified crop plot. Four towers and a selectable 8, 12,
+or 16 independently driven cables move a carrier across the field; a rigid
+vertical stage and local tool provide the last metres of reach and plant-level
+precision. The current working hypothesis uses 12 cables: two upper and one
+lower connection at each tower.
 
 The goal is not simply to automate a tractor. It is to investigate what farm
 design becomes possible when routine machine traffic no longer passes over the
 growing soil and crop spacing is no longer dictated by wheels, implements, and
 turning radii.
 
-![Farmhand carrier lowering a precision tool to a tomato plant](public/vision/plant-precision.webp)
+![Farmhand high and low tower cables stabilizing an elevated carrier](public/vision/farmhand-high-low-carrier.webp)
 
 *The core design hypothesis: macro positioning above the canopy, with a rigid
 stage and local tool providing plant-level access.*
@@ -40,7 +42,7 @@ Farmhand separates movement into two scales:
 
 ```mermaid
 flowchart LR
-    A["Four towers and winches"] --> B["Eight-cable carrier"]
+    A["Four towers and winches"] --> B["8 / 12 / 16-cable carrier"]
     B --> C["Rigid vertical stage"]
     C --> D["Local arm or wrist"]
     D --> E["Crop-specific tool"]
@@ -65,14 +67,14 @@ still require a temporary ground brace.
 
 The browser model currently includes:
 
-- four configurable towers and eight individually modeled cables;
-- eight distinct platform attachment points;
+- four configurable towers and selectable 8, 12, or 16-cable layouts;
+- high and low tower anchors with distinct carrier attachment points;
 - rigid-body inverse cable geometry and cable-rate Jacobians;
 - bounded positive-tension allocation against gravity;
 - acceleration-limited carrier motion;
 - cable length, tension, reel speed, and equilibrium telemetry;
-- adjustable plot size, tower height, carrier height, moving mass, tool reach,
-  and travel speed;
+- adjustable plot size, upper and lower anchor heights, carrier height, moving
+  mass, tool reach, and travel speed;
 - mixed-crop visualization and click-to-move navigation; and
 - first-order operation throughput estimates.
 
@@ -139,7 +141,8 @@ Farmhand builds on demonstrated agricultural cable systems and related
 research:
 
 - [AgroCableBot](https://doi.org/10.3390/robotics12060165) studies an eight-cable
-  reconfigurable agricultural CDPR and tension-feasible workspace.
+  reconfigurable agricultural CDPR and tension-feasible workspace. The project
+  page reproduces cropped Figures 3 and 11 under CC BY 4.0 with attribution.
 - The [ETH field phenotyping platform](https://doi.org/10.1071/FP16165)
   demonstrated a cable-suspended sensor system over roughly one hectare.
 - [Large-scale agricultural wire-robot analysis](https://doi.org/10.3182/20130327-3-JP-3017.00021)
