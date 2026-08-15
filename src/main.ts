@@ -13,6 +13,7 @@ import { FarmScene } from './visualization/scene';
 
 const root = document.querySelector<HTMLDivElement>('#app');
 if (!root) throw new Error('Application root was not found.');
+const baseUrl = import.meta.env.BASE_URL;
 
 root.innerHTML = `
   <div class="app-shell">
@@ -34,11 +35,57 @@ root.innerHTML = `
       </nav>
     </header>
 
-    <main class="workspace">
+    <section class="vision-intro" aria-labelledby="vision-title">
+      <div class="vision-hero">
+        <img
+          src="${baseUrl}vision/farmhand-field.webp"
+          alt="Concept visualization of a four-tower cable robot working above a diversified market garden"
+          width="1672"
+          height="940"
+          fetchpriority="high"
+        />
+        <div class="vision-hero-shade" aria-hidden="true"></div>
+        <div class="vision-hero-copy">
+          <p class="eyebrow">A new field architecture</p>
+          <h1 id="vision-title">Farming beyond<br><em>tractor-defined rows.</em></h1>
+          <p>Four towers move one intelligent carrier above a living, diversified field—bringing sensing and precision tools to each plant without routinely driving heavy equipment across the soil.</p>
+          <div class="vision-actions">
+            <a class="hero-link hero-link-primary" href="#simulator">Enter the simulator</a>
+            <a class="hero-link" href="https://github.com/ghanzo/farmhand-cdpr/blob/main/docs/farm-concept.md">Read the concept</a>
+          </div>
+          <span class="concept-label">Concept visualization · proposed architecture</span>
+        </div>
+      </div>
+
+      <div class="vision-story">
+        <figure>
+          <img
+            src="${baseUrl}vision/plant-precision.webp"
+            alt="Concept visualization of a rigid tool stage reaching from a cable carrier to inspect a tomato plant"
+            width="1536"
+            height="1024"
+            loading="lazy"
+          />
+          <figcaption>Concept visualization · macro positioning above, plant-level tooling below</figcaption>
+        </figure>
+        <div class="vision-story-copy">
+          <p class="eyebrow">Macro reach. Plant precision.</p>
+          <h2>One infrastructure.<br>Many kinds of field work.</h2>
+          <p>The cable system covers the plot. A rigid stage and local arm solve the final metres—navigating foliage, orienting sensors, and placing crop-specific tools where they are needed.</p>
+          <ol class="vision-principles">
+            <li><strong>Keep weight at the edge</strong><span>Towers, winches, tanks, and service access stay outside the cropped soil.</span></li>
+            <li><strong>Keep the carrier above the canopy</strong><span>The vertical stage reaches down without dragging farm-scale cables through plants.</span></li>
+            <li><strong>Measure before scaling</strong><span>Start with scanning and targeted spraying on a 10 × 10 metre pilot.</span></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <main class="workspace" id="simulator">
       <aside class="control-panel" aria-label="Simulation controls">
         <div class="panel-intro">
           <p class="eyebrow">Pilot plot 01</p>
-          <h1>Macro reach.<br><em>Plant precision.</em></h1>
+          <h2 class="panel-title">Test the<br><em>pilot geometry.</em></h2>
           <p>Move the carrier across a mixed planting while eight independent cables remain under positive tension.</p>
         </div>
 

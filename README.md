@@ -9,6 +9,10 @@
 **[Read the farm concept](docs/farm-concept.md)** ·
 **[Explore the research roadmap](docs/research-roadmap.md)**
 
+![Farmhand CDPR concept operating above a diversified crop plot](public/vision/farmhand-field.webp)
+
+*Concept visualization of the proposed four-tower field architecture.*
+
 Farmhand is an open engineering study for a cable-driven parallel robot (CDPR)
 that works above a diversified crop plot. Four towers and eight cables move a
 carrier across the field; a rigid vertical stage and local tool provide the
@@ -18,6 +22,11 @@ The goal is not simply to automate a tractor. It is to investigate what farm
 design becomes possible when routine machine traffic no longer passes over the
 growing soil and crop spacing is no longer dictated by wheels, implements, and
 turning radii.
+
+![Farmhand carrier lowering a precision tool to a tomato plant](public/vision/plant-precision.webp)
+
+*The core design hypothesis: macro positioning above the canopy, with a rigid
+stage and local tool providing plant-level access.*
 
 > **Research status:** this is an early simulation and design project for a
 > 10 × 10 metre pilot—not a certified structure, hardware controller, or safety
