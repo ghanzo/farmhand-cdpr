@@ -38,10 +38,10 @@ root.innerHTML = `
     <section class="vision-intro" aria-labelledby="vision-title">
       <div class="vision-hero">
         <img
-          src="${baseUrl}vision/farmhand-field.webp"
-          alt="Concept visualization of a four-tower cable robot working above a diversified market garden"
-          width="1672"
-          height="940"
+          src="${baseUrl}vision/farmhand-terrain-scale.webp"
+          alt="Aerial concept visualization of a four-tower cable robot spanning an entire multi-field farm"
+          width="1536"
+          height="864"
           fetchpriority="high"
         />
         <div class="vision-hero-shade" aria-hidden="true"></div>
@@ -53,7 +53,7 @@ root.innerHTML = `
             <a class="hero-link hero-link-primary" href="#simulator">Enter the simulator</a>
             <a class="hero-link" href="https://github.com/ghanzo/farmhand-cdpr/blob/main/docs/farm-concept.md">Read the concept</a>
           </div>
-          <span class="concept-label">Concept visualization · proposed architecture</span>
+          <span class="concept-label">Concept visualization · ultimate farm-scale architecture</span>
         </div>
       </div>
 
