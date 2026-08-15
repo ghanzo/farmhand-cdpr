@@ -21,7 +21,6 @@ export class FarmScene {
   private readonly controls: OrbitControls;
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
-  private readonly clock = new THREE.Clock();
   private readonly fieldGroup = new THREE.Group();
   private readonly towerGroup = new THREE.Group();
   private readonly cropGroup = new THREE.Group();
@@ -48,7 +47,7 @@ export class FarmScene {
     this.renderer.setClearColor(0x0b1711, 1);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
 
     this.camera.position.set(15, 12, 17);
     this.controls = new OrbitControls(this.camera, this.canvas);
@@ -220,7 +219,7 @@ export class FarmScene {
   }
 
   render(): void {
-    const elapsed = this.clock.getElapsedTime();
+    const elapsed = performance.now() / 1000;
     this.groundTarget.rotation.z = elapsed * 0.45;
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
