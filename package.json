@@ -1,0 +1,23 @@
+{
+  "name": "farmhand-cdpr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Research-backed simulator for a cable-driven agricultural robot.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty false"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.185.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.1",
+    "vitest": "^4.1.10"
+  }
+}

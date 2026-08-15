@@ -1,110 +1,236 @@
-# SkyCam Sim
+# Farmhand CDPR
 
-**▶ Live demo: https://ghanzo.github.io/skycam-cdpr/**
+### A cable-driven field robot for plant-level agriculture without tractor-defined crop layouts
 
-A browser simulator of an **8-cable cable-driven parallel robot (CDPR)**: a
-platform held by eight cables from four corner masts — four suspending from
-the tower tops, four pulling back from low anchors — the antagonistic
-configuration that constrains all six degrees of freedom. The same
-architecture scales from broadcast SkyCams (the 4-cable version) to warehouse
-cranes (NIST's RoboCrane) to field robots — a gondola that can carry a camera
-today and a tool later.
+[![CI](https://github.com/ghanzo/farmhand-cdpr/actions/workflows/ci.yml/badge.svg)](https://github.com/ghanzo/farmhand-cdpr/actions/workflows/ci.yml)
+[![GitHub Pages](https://github.com/ghanzo/farmhand-cdpr/actions/workflows/deploy-pages.yml/badge.svg)](https://ghanzo.github.io/farmhand-cdpr/)
 
-Click anywhere on the field and the platform flies there under an
-acceleration-limited motion profile — while eight live motor readouts and a
-strip chart show each cable paying out at its own **continuously changing,
-non-linear rate**. That contrast is the entire point of the project: simple
-platform motion demands non-trivial motor control.
+**[Open the simulator](https://ghanzo.github.io/farmhand-cdpr/)** ·
+**[Read the farm concept](docs/farm-concept.md)** ·
+**[Explore the research roadmap](docs/research-roadmap.md)**
 
-![nfl-camera](https://user-images.githubusercontent.com/22437742/196407908-cf30e197-1789-40a8-95c8-85206209ca5d.jpg)
+![Farmhand CDPR concept operating above a diversified crop plot](public/vision/farmhand-field.webp)
 
-## The CDPR family
+*Concept visualization of the proposed four-tower field architecture.*
 
-The same four-cables-and-winches architecture, at three very different jobs:
+Farmhand is an open engineering study for a cable-driven parallel robot (CDPR)
+that works above a diversified crop plot. Four towers and eight cables move a
+carrier across the field; a rigid vertical stage and local tool provide the
+last metres of reach and plant-level precision.
 
-| Broadcast | Heavy work |
-|---|---|
-| ![Skycam at Beaver Stadium](docs/img/skycam-beaver-stadium.jpg) | ![NIST RoboCrane servicing a C-130](docs/img/robocrane-c130.jpg) |
-| A skycam working a Penn State game — the suspended 4-cable CDPR this sim models. *Photo: [Famartin](https://commons.wikimedia.org/wiki/File:2025-08-30_15_40_02_A_skycam_during_a_football_game_at_Beaver_Stadium_at_Pennsylvania_State_University_in_College_Township,_Centre_County,_Pennsylvania.jpg), CC BY-SA 4.0, via Wikimedia Commons* | NIST's RoboCrane suspending a worker cab to strip paint from a USAF C-130 — proof that cable platforms can do real work, not just carry cameras. *Photo: N.E. Wasson Jr./US Technologies, via [NIST](https://www.nist.gov/programs-projects/robocrane)* |
+The goal is not simply to automate a tractor. It is to investigate what farm
+design becomes possible when routine machine traffic no longer passes over the
+growing soil and crop spacing is no longer dictated by wheels, implements, and
+turning radii.
 
-And the biggest CDPR on Earth: the [FAST radio telescope](https://en.wikipedia.org/wiki/Five-hundred-meter_Aperture_Spherical_Telescope)
-in China flies its 30-ton receiver cabin over a 500 m dish on six cables from
-six towers — millimeter-precision positioning at building scale.
+![Farmhand carrier lowering a precision tool to a tomato plant](public/vision/plant-precision.webp)
 
-## The math (v3 — motion profiles, dynamics, slack, reels)
+*The core design hypothesis: macro positioning above the canopy, with a rigid
+stage and local tool providing plant-level access.*
 
-Towers hold the cable ends at fixed anchor points **T<sub>i</sub>**; the
-commanded camera position is **P** = (x, y, z). Each cable length is 3D
-Pythagoras, and the payout rate is the motion projected onto the cable:
+> **Research status:** this is an early simulation and design project for a
+> 10 × 10 metre pilot—not a certified structure, hardware controller, or safety
+> system.
 
-```
-Lᵢ = |P − Tᵢ|            dLᵢ/dt = ( (P − Tᵢ) · v ) / Lᵢ
-```
+## The idea
 
-**Motion profile** — the rig accelerates at a capped rate and its speed is
-governed so it can always brake to the target:
+Farmhand separates movement into two scales:
 
-```
-|v| ≤ min( vmax, √(2 · a · d_remaining) )
-```
-
-Retargeting mid-flight just bends the trajectory — no precomputed profile.
-
-**Gondola dynamics** — the rendered gondola is a damped spring chasing the
-commanded point (`ẍ = ω²(P_cmd − x) − 2ζω·ẋ`), softer horizontally than
-vertically, so it lags under acceleration, swings through stops, and bobs as it
-settles. A faint ghost dot marks the commanded position the winches track.
-
-**Cables are assumed taut** — real rigs hold enough preload tension that the
-cables stay straight; the sim adopts that assumption and renders every cable
-as a straight member.
-
-**Reel geometry** — each winch drum (0.35 yd core, 8 mm cable, 38 wraps per
-layer, 300 yd capacity) converts line speed to drum RPM through the effective
-radius of the working layer:
-
-```
-r_eff = r_core + layer · d_cable        RPM = 60 · |dL/dt| / (2π · r_eff)
+```mermaid
+flowchart LR
+    A["Four towers and winches"] --> B["Eight-cable carrier"]
+    B --> C["Rigid vertical stage"]
+    C --> D["Local arm or wrist"]
+    D --> E["Crop-specific tool"]
+    F["Plant map and sensors"] --> B
+    F --> D
+    E --> G["Scan · spray · sample · harvest · weed"]
 ```
 
-Same line speed on a different layer → different RPM. That's why real winches
-encoder the cable, not just the motor.
+- The **CDPR carrier** provides fast, field-scale positioning above the canopy.
+- The **vertical stage** lowers tools without turning them into another freely
+  suspended pendulum.
+- The **local manipulator** supplies final orientation, compliance, foliage
+  access, and force control.
+- The **service dock** can eventually change tools, refill liquids, unload
+  harvest, and calibrate sensors at the field edge.
 
-**Rigidity** — cables only pull, so constraint comes from cables opposing each
-other. This sim runs the full **8-cable configuration**: M1–M4 suspend from the
-tower tops, M5–M8 pull from low anchors on the same masts, giving antagonistic
-pairs that constrain all six degrees of freedom (RoboCrane / IPAnema style).
-Stiffness then scales with preload tension and control gain — the Rigidity
-slider stands in for both (vertical is held near critical damping so altitude
-only changes when commanded). Remaining real-world upgrades: heavier platform,
-input shaping so commands never excite the swing modes, and a self-stabilized
-end effector for the last few centimeters of precision.
+This macro–micro architecture avoids asking the farm-scale cable system to make
+every delicate motion. Force-heavy work such as cultivation or uprooting may
+still require a temporary ground brace.
 
-## Using the sim
+## Interactive simulator
 
-- **Click the field** — camera flies there under the acceleration profile
-- **Drag / scroll** — orbit and zoom the view
-- **Speed / Accel / Height sliders** — vmax (yd/s), amax (yd/s²), altitude (yd)
-- **v1 pass** — replays the original demo: one straight midfield pass
-- **Lap** — tours the corners at the set height; translations are always flat —
-  altitude changes only when you move the Height slider
-- **Stop** — brakes at the accel limit; watch the gondola swing and settle
-- **Rigidity slider** — cable tension / control stiffness stand-in: loose rope
-  at 0%, locked-in tracking at 100%
-- Motor panel: cable paid out, signed payout rate (+ out / − in), drum RPM +
-  working layer; the chart traces payout rates (last 30 s)
+The browser model currently includes:
 
-Implementation: a single `index.html` — Three.js (pinned CDN) for the 3D scene,
-a hand-rolled canvas strip chart, no build step. Units are yards; the field is a
-regulation 120 × 53.3 yd.
+- four configurable towers and eight individually modeled cables;
+- eight distinct platform attachment points;
+- rigid-body inverse cable geometry and cable-rate Jacobians;
+- bounded positive-tension allocation against gravity;
+- acceleration-limited carrier motion;
+- cable length, tension, reel speed, and equilibrium telemetry;
+- adjustable plot size, tower height, carrier height, moving mass, tool reach,
+  and travel speed;
+- mixed-crop visualization and click-to-move navigation; and
+- first-order operation throughput estimates.
 
-## v1 (2022) — where this started
+### Operation classes
 
-Version 1 reduced the problem to its essence: **one motor, one straight-line
-translation, in 2D**, animated with Python turtle graphics. The camera moved at a
-constant rate while the top-right motor's step rate changed non-linearly through
-the translation. The original write-up, math images, and code are preserved in
-[`/v1`](./v1/).
+| Operation | Mechanical character | First-release role |
+|---|---|---|
+| Multispectral scanning | Non-contact | Primary pilot task |
+| Targeted foliar spraying | Low reaction force | Primary pilot task |
+| Plant and soil sampling | Precise, moderate force | Instrumented follow-on |
+| Delicate harvesting | Vision and compliance limited | Later manipulation study |
+| Mechanical weeding | High reaction force | Requires bracing research |
 
-- v1 on Replit: https://replit.com/@gonzo/movement-via-time#main.py
-- v1 math on Desmos: https://www.desmos.com/calculator/h2k6fdmklq
+## What the model does not yet solve
+
+The simulator deliberately exposes its boundary. It does not yet model:
+
+- cable sag, elasticity, creep, damping, or thermal effects;
+- wind and carrier aerodynamics;
+- tower, foundation, and platform deflection;
+- pulley friction, fleet angle, gearbox dynamics, brakes, or encoder error;
+- closed-loop tension and pose control;
+- cable, plant, tool, and human collision avoidance;
+- redundant sensing and fault response; or
+- measured positioning accuracy under outdoor conditions.
+
+A green feasibility indicator means only that the simplified static model found
+a low-residual set of positive cable tensions within the selected limits. Read
+the complete [assumptions and limitations](docs/assumptions-and-limitations.md)
+before interpreting simulation results.
+
+## Why investigate this?
+
+### Keep routine machine traffic off cropped soil
+
+Farmhand places towers, foundations, winches, and service access at the field
+edge. The agronomic hypothesis is that reducing repeated axle traffic can help
+preserve pore connectivity, aeration, infiltration, and root access. The target
+is well-aggregated soil—not the loosest soil possible.
+
+### Design planting around biology instead of equipment width
+
+Overhead access may make intercropping, relay cropping, living mulches, flower
+strips, and non-row spatial patterns easier to manage. It does not prove that
+every polyculture will outperform a local benchmark; it expands the layouts
+that can be tested and managed mechanically.
+
+### Reuse one positioning system across many tasks
+
+Scanning, targeted applications, sampling, pruning, weeding, and harvesting may
+share the same towers and carrier. Whether that produces an economic advantage
+depends on throughput, availability, maintenance, crop value, and the cost of
+the complete safety-rated structure—not just inexpensive motors and cable.
+
+### Build a plant-level feedback loop
+
+Repeated sensing can create a history for every plant: observations,
+applications, samples, symptoms, interventions, and outcomes. That dataset can
+support both autonomous operation and controlled agronomic trials.
+
+## Research foundation
+
+Farmhand builds on demonstrated agricultural cable systems and related
+research:
+
+- [AgroCableBot](https://doi.org/10.3390/robotics12060165) studies an eight-cable
+  reconfigurable agricultural CDPR and tension-feasible workspace.
+- The [ETH field phenotyping platform](https://doi.org/10.1071/FP16165)
+  demonstrated a cable-suspended sensor system over roughly one hectare.
+- [Large-scale agricultural wire-robot analysis](https://doi.org/10.3182/20130327-3-JP-3017.00021)
+  addresses elasticity, dynamics, and performance across large spans.
+- [CAFEs](https://doi.org/10.48550/arXiv.2503.00514) explores multiple
+  lightweight agricultural end effectors sharing cable infrastructure.
+- A [hybrid cable robot with a local arm](https://doi.org/10.1109/ICRA48891.2023.10161045)
+  demonstrates the same macro–micro principle for plant monitoring.
+- A four-season [soil compaction study](https://doi.org/10.1038/s43705-021-00046-8)
+  documents persistent changes in soil physical properties and microbial
+  communities.
+- A synthesis of 98 meta-analyses found that
+  [agricultural diversification](https://doi.org/10.1126/sciadv.aba1715)
+  generally improved biodiversity and multiple ecosystem services without
+  reducing yield overall, while emphasizing context-dependent trade-offs.
+
+The [BibTeX reference library](docs/references.bib) contains the project's core
+sources. Advancing Eco Agriculture's Plant Health Pyramid is included as a
+practitioner framework whose claims should be converted into measurable
+hypotheses—not presented as scientific consensus.
+
+## Run locally
+
+Requires a current Node.js release.
+
+```bash
+git clone https://github.com/ghanzo/farmhand-cdpr.git
+cd farmhand-cdpr
+npm install
+npm run dev
+```
+
+Then open the local URL printed by Vite.
+
+### Verify the project
+
+```bash
+npm test
+npm run typecheck
+npm run build
+```
+
+## Repository map
+
+```text
+src/
+├── cdpr/           geometry, kinematics, tension, workspace, and reels
+├── farm/           operations and throughput models
+├── math/           dependency-free vector operations
+├── simulation/     motion control and simulation state
+├── visualization/  Three.js field, towers, cables, carrier, and crops
+└── main.ts          interface and simulation loop
+
+tests/               deterministic engineering checks
+docs/                concept, evidence, architecture, economics, and roadmap
+.github/workflows/   continuous verification and Pages deployment
+```
+
+## Development roadmap
+
+1. **Simulation foundation** — validate geometry, tension-feasible workspace,
+   reel behavior, loads, energy, and measurable requirements.
+2. **Bench mechanism** — compare a small physical frame with the simulation and
+   measure tension, repeatability, backlash, and settling time.
+3. **Outdoor pilot** — demonstrate scanning and targeted liquid application
+   over a 10 × 10 metre plot.
+4. **Compliant manipulation** — add local force sensing, harvesting, sampling,
+   pruning, and low-force weeding.
+5. **Agronomic trial** — compare soil, biology, plant nutrition, crop health,
+   yield, energy, labor, and cost against matched management controls.
+
+Scaling to a hectare is a research gate, not a direct extrapolation from the
+pilot. See the full [research roadmap](docs/research-roadmap.md).
+
+## Documentation
+
+- [Farm concept](docs/farm-concept.md)
+- [System architecture](docs/system-architecture.md)
+- [Agronomic case](docs/agronomy.md)
+- [Operations and tooling](docs/operations-and-tools.md)
+- [Economics](docs/economics.md)
+- [Research roadmap](docs/research-roadmap.md)
+- [Assumptions and limitations](docs/assumptions-and-limitations.md)
+- [Reference library](docs/references.bib)
+
+## Safety and use
+
+Do not use this software to control physical machinery. A hardware system would
+require independent brakes, redundant pose and tension sensing, certified
+structures and foundations, exclusion zones, weather limits, fault handling,
+and an independently reviewed safety case.
+
+## License
+
+No reuse license has been selected yet. Choose and add a license before inviting
+external redistribution or contributions.
