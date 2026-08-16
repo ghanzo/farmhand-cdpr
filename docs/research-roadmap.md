@@ -9,7 +9,11 @@
 
 ## Phase 2 — bench mechanism
 
-- Build a small indoor four-tower frame.
+- Build and characterize one instrumented winch module.
+- Build the documented [eight-cable tabletop 3D testbed](tabletop-3d-testbed.md) before
+  attempting a larger room-scale or overhead frame.
+- Build a small indoor four-tower frame only after the tabletop safety and
+  measurement gates pass.
 - Measure cable length, tension, repeatability, backlash, and settling time.
 - Test a rigid vertical stage with a camera and spray surrogate.
 - Compare measured behavior with the simulator.

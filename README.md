@@ -7,6 +7,7 @@
 
 **[Open the simulator](https://ghanzo.github.io/farmhand-cdpr/)** ·
 **[Read the farm concept](docs/farm-concept.md)** ·
+**[Plan the 3D tabletop testbed](docs/tabletop-3d-testbed.md)** ·
 **[Explore the research roadmap](docs/research-roadmap.md)**
 
 ![Farmhand CDPR concept spanning an entire multi-field farm](public/vision/farmhand-12-cable-field.webp)
@@ -198,8 +199,26 @@ src/
 
 tests/               deterministic engineering checks
 docs/                concept, evidence, architecture, economics, and roadmap
+hardware/            prototype bills of materials and build packages
 .github/workflows/   continuous verification and Pages deployment
 ```
+
+## Tabletop 3D testbed
+
+The first physical extension is a guarded tabletop CDPR with four corner
+columns, eight independently driven cables, and a lightweight carrier moving in
+three dimensions. Each column provides one upper and one lower cable anchor;
+the carrier uses eight separated attachment points so the system can generate
+both translational forces and rotational moments while maintaining positive
+cable tension.
+
+The staged build starts with one instrumented winch, then an antagonistic pair,
+four-cable commissioning, and finally the complete eight-cable machine. The
+design includes encoder feedback, per-cable tension measurement, two-camera pose
+truth, an emergency stop, guard interlocks, and conservative speed gates.
+
+See the [complete testbed plan](docs/tabletop-3d-testbed.md) and its
+[machine-readable bill of materials](hardware/tabletop-3d-testbed/bom.csv).
 
 ## Development roadmap
 
@@ -225,6 +244,7 @@ pilot. See the full [research roadmap](docs/research-roadmap.md).
 - [Operations and tooling](docs/operations-and-tools.md)
 - [Economics](docs/economics.md)
 - [Research roadmap](docs/research-roadmap.md)
+- [Eight-cable tabletop 3D testbed and bill of materials](docs/tabletop-3d-testbed.md)
 - [Assumptions and limitations](docs/assumptions-and-limitations.md)
 - [Reference library](docs/references.bib)
 
