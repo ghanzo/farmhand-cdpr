@@ -945,6 +945,16 @@ button.quiet {
     grid-template-columns: 1fr;
   }
 
+  .vision-story figure {
+    width: min(80vw, 480px);
+    justify-self: center;
+  }
+
+  .vision-story figure img {
+    height: auto;
+    object-fit: contain;
+  }
+
   .paper-figures,
   .finding-grid {
     grid-template-columns: 1fr;
